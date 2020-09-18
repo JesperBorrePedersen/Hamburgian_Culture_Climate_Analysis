@@ -271,10 +271,10 @@ save_plot("figures/figure1_precip_by_site.png",
 
 ## 2) Raster plots ----
 area_of_interest <- extent(c(0,30,50,60)) 
-time_range_bp <- data.frame(min_bp = 15000,
-                         max_bp = 13800,
-                         min_cent = 150,
-                         max_cent = 138)
+time_range_bp <- data.frame(min_bp = 15000-2000,
+                         max_bp = 13800-2000,
+                         min_cent = 150-20,
+                         max_cent = 138-20)
 
 ## calculate average values for the broad time-range
 # Temperature
@@ -327,14 +327,30 @@ levelplot(hamburigan_mean_precip,
   layer(sp.polygons(countries, col = "darkgrey", ))
 dev.off()
 
-# Temp vs. precip plot of sites and random sample
+## Temp vs. precip plot of sites and random sample
+
+# Join temperature and precipitaiton data for easy plotting, reoder sites by lat
 mean_both_ham <- mean_precip_ham %>%
   full_join(mean_temp_ham) %>%
   mutate(Site = ordered(Site, levels = levels(fct_reorder(hamburgian_sites$Site, hamburgian_sites$Latitude))))
+
+# Cross check with extraction from rasters
+mean_both_ham2 <- data.frame(
+  Site = unique(hamburgian_sites$Site),
+  mean_temp_ham = raster::extract(hamburigan_mean_temp, as_Spatial(distinct(hamburgian_sites, Site))),
+  mean_precip_ham = raster::extract(hamburigan_mean_precip, as_Spatial(distinct(hamburgian_sites, Site)))
+) %>% 
+  as_tibble() %>%
+  mutate(Site = ordered(Site, levels = levels(fct_reorder(hamburgian_sites$Site, hamburgian_sites$Latitude))))
+all_equal(mean_both_ham, mean_both_ham2)
+
+set.seed(6)
+
 random_sample <- data.frame(
   site = paste0("Random_", 1:100000),
   mean_temp_ham = sampleRandom(hamburigan_mean_temp, 100000),
   mean_precip_ham = sampleRandom(hamburigan_mean_precip, 100000))
+
 temp_vs_precip_plot <- ggplot(
   mean_both_ham, 
   aes(x = mean_temp_ham,
