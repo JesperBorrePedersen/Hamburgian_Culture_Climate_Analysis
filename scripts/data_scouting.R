@@ -364,7 +364,7 @@ temp_vs_precip_plot <- ggplot(
        y = "Mean Precipitation 15k-13.5k BP (mm)") +
   geom_point() +
   scale_colour_discrete_qualitative(palette = "Dark2") +
-  theme_cowplot(15) +
+  theme_cowplot(14) +
   theme(legend.position = "none")
 save_plot("figures/temp_vs_precip.png",
           temp_vs_precip_plot,
