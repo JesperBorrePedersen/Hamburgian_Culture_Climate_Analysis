@@ -7,6 +7,8 @@ library(sf)
 library(raster)
 library(tidyverse)
 library(cowplot)
+library(rasterVis)
+library(colorspace)
 
 rasterOptions(progress = "text")
 
@@ -84,7 +86,8 @@ hamburgian_sites <- hamburgian_sites[!is.na(hamburgian_sites$Longitude),]
 # Covnert to sf object
 hamburgian_sites <- st_as_sf(hamburgian_sites, 
                              coords = c("Longitude", "Latitude"),
-                             crs = 4326)
+                             crs = 4326,
+                             remove = F)
 # Make time ranges interpretable
 hamburgian_sites$CalBP.Pulses_begin <- as.numeric(
   gsub("^([0-9]*\\.[0-9]*) -.*", 
@@ -132,6 +135,10 @@ precip_df <- full_join(precip_df, precip_look_up)
 save(temp_df, file = "data/temp_df.Rda")
 save(precip_df, file = "data/precip_df.Rda")
 
+# Load dfs
+load("data/temp_df.Rda")
+load("data/precip_df.Rda")
+
 ## 2) Figure 1 - Time-series of LGM climate per site ----
 # Calculate key stats
 
@@ -146,7 +153,8 @@ mean_precip_ham <- precip_df %>%
   summarise(mean_precip_ham = mean(precip))
 
 # Plots of Temp and Precip
-temp_plot <- ggplot(temp_df,
+temp_plot <- ggplot(temp_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>%
+                      mutate(Site = ordered(Site, levels = levels(fct_reorder(hamburgian_sites$Site, hamburgian_sites$Latitude)))),
        aes(x = year_BP,
            y = temp,
            colour = Site)) +
@@ -155,17 +163,38 @@ temp_plot <- ggplot(temp_df,
              mapping = aes(x = 13500,
                            xend = 15000,
                            y = mean_temp_ham, 
-                           yend = mean_temp_ham,
-                           colour = Site)) +
+                           yend = mean_temp_ham),
+             colour = "black") +
   geom_vline(data = hamburgian_sites,
-             mapping = aes(xintercept = CalBP.Pulses_begin, 
-                           colour = Site))+
+             mapping = aes(xintercept = CalBP.Pulses_begin))+
   geom_vline(data = hamburgian_sites,
              mapping = aes(xintercept = CalBP.Pulses_end)) +
-  labs(x = "Year BP", y = "Temp °C (Bio01)") +
+  geom_text(data = mean_temp_ham,
+               mapping = aes(x = 15000,
+                             y = mean_temp_ham, 
+                             label = paste0("mean:\n", round(mean_temp_ham,1), "°C")),
+               colour = "black",
+            hjust = 1) +
+  geom_text(data = hamburgian_sites,
+            mapping = aes(x = CalBP.Pulses_begin, 
+                          y = max(temp_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>% pull(temp)),
+                          label = paste0("", CalBP.Pulses_begin, " BP ")),
+            vjust = 1,
+            hjust = 1,
+            colour = "black") +
+  geom_text(data = hamburgian_sites,
+            mapping = aes(x = CalBP.Pulses_end, 
+                          y = max(temp_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>% pull(temp)),
+                          label = paste0(" ", CalBP.Pulses_end, " BP")),
+            vjust = 1,
+            hjust = 0,
+            colour = "black") +
+  labs(x = "Year BP", y = "Annual Mean Temp °C (Bio01)") +
   scale_x_reverse() +
+  scale_colour_discrete_qualitative(palette = "Dark2") +
   theme_cowplot(15) +
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
 save_plot("figures/figure1_temp.png",
           temp_plot,
@@ -180,7 +209,9 @@ save_plot("figures/figure1_temp_by_site.png",
           base_height = 20)
 
 # Precip
-precip_plot <- ggplot(precip_df,
+# Plots of Temp and Precip
+precip_plot <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>%
+                      mutate(Site = ordered(Site, levels = levels(fct_reorder(hamburgian_sites$Site, hamburgian_sites$Latitude)))),
                     aes(x = year_BP,
                         y = precip,
                         colour = Site)) +
@@ -189,17 +220,38 @@ precip_plot <- ggplot(precip_df,
                mapping = aes(x = 13500,
                              xend = 15000,
                              y = mean_precip_ham, 
-                             yend = mean_precip_ham,
-                             colour = Site)) +
+                             yend = mean_precip_ham),
+               colour = "black") +
   geom_vline(data = hamburgian_sites,
-             mapping = aes(xintercept = CalBP.Pulses_begin, 
-                           colour = Site))+
+             mapping = aes(xintercept = CalBP.Pulses_begin))+
   geom_vline(data = hamburgian_sites,
              mapping = aes(xintercept = CalBP.Pulses_end)) +
-  labs(x = "Year BP", y = "Precipitation mm (Bio12)") +
+  geom_text(data = mean_precip_ham,
+            mapping = aes(x = 13500,
+                          y = mean_precip_ham, 
+                          label = paste0("mean:\n", round(mean_precip_ham,1), "°C")),
+            colour = "black",
+            hjust = 0) +
+  geom_text(data = hamburgian_sites,
+            mapping = aes(x = CalBP.Pulses_begin, 
+                          y = min(precip_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>% pull(precip)) + 25,
+                          label = paste0("", CalBP.Pulses_begin, " BP ")),
+            vjust = 1,
+            hjust = 1,
+            colour = "black") +
+  geom_text(data = hamburgian_sites,
+            mapping = aes(x = CalBP.Pulses_end, 
+                          y = min(precip_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>% pull(precip)) + 25,
+                          label = paste0(" ", CalBP.Pulses_end, " BP")),
+            vjust = 1,
+            hjust = 0,
+            colour = "black") +
+  labs(x = "Year BP", y = "Annual Preciptation mm (Bio01)") +
   scale_x_reverse() +
+  scale_colour_discrete_qualitative(palette = "Dark2") +
   theme_cowplot(15) +
-  theme(legend.position = "none") 
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
 save_plot("figures/figure1_precip.png",
           precip_plot,
@@ -208,8 +260,46 @@ save_plot("figures/figure1_precip.png",
 
 # Plot per site
 precip_plot <- precip_plot + facet_wrap(vars(Site))
-save_plot("figures/figure1_precip.png_by_site.png",
+save_plot("figures/figure1_precip_by_site.png",
           precip_plot,
-          base_aspect_ratio = 1.3,
+          base_aspect_ratio = 1.6,
           base_height = 20)
 
+## 2) Raster plots ----
+area_of_interest <- extent(c(0,30,50,60)) 
+time_range_bp <- data.frame(min_bp = 15000,
+                         max_bp = 13800,
+                         min_cent = 150,
+                         max_cent = 138)
+
+## calculate average values for the broad time-range
+# Temperature
+temp_time_range_bp_all_cents <- paste0(
+  "temp_",
+  seq(time_range_bp$max_cent, time_range_bp$min_cent, 1),
+  "_BCE")
+hamburigan_mean_temp <- mean(crop(temp[[temp_time_range_bp_all_cents]], area_of_interest))
+
+# Precip
+precip_time_range_bp_all_cents <- paste0(
+  "precip_",
+  seq(time_range_bp$max_cent, time_range_bp$min_cent, 1),
+  "_BCE")
+hamburigan_mean_precip <- mean(crop(precip[[precip_time_range_bp_all_cents]], area_of_interest))
+
+png("figures/mean_temp.png", 
+    width = 6,
+    height = 3,
+    units = "in",
+    res = 300)
+levelplot(hamburigan_mean_temp, margin = F) +
+dev.off()
+
+png("figures/mean_precip.png", 
+    width = 6,
+    height = 3,
+    units = "in",
+    res = 300)
+levelplot(hamburigan_mean_precip, margin = F)
+dev.off()
+levelplot(crop(temp[[temp_time_range_bp_all_cents[1]]], area_of_interest), margins = F)
