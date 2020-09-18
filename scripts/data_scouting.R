@@ -9,6 +9,8 @@ library(tidyverse)
 library(cowplot)
 library(rasterVis)
 library(colorspace)
+library(rnaturalearth)
+library(rnaturalearthdata)
 
 rasterOptions(progress = "text")
 
@@ -210,6 +212,8 @@ save_plot("figures/figure1_temp_by_site.png",
 
 # Precip
 # Plots of Temp and Precip
+
+
 precip_plot <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>%
                       mutate(Site = ordered(Site, levels = levels(fct_reorder(hamburgian_sites$Site, hamburgian_sites$Latitude)))),
                     aes(x = year_BP,
@@ -287,12 +291,23 @@ precip_time_range_bp_all_cents <- paste0(
   "_BCE")
 hamburigan_mean_precip <- mean(crop(precip[[precip_time_range_bp_all_cents]], area_of_interest))
 
+## Plot mean maps
+
+# Generate political boundaries for maps
+countries <- ne_countries(scale = "medium", returnclass = "sp")
+countries <- spTransform(countries, crs(hamburigan_mean_temp))
+countries <- crop(countries, hamburigan_mean_temp)
+hamburgian_sites <- st_transform(hamburgian_sites, crs(hamburigan_mean_temp))
 png("figures/mean_temp.png", 
     width = 6,
     height = 3,
     units = "in",
     res = 300)
-levelplot(hamburigan_mean_temp, margin = F) +
+levelplot(hamburigan_mean_temp, 
+          margin = F,
+          main = "Mean Temperature 15k-13.5k BP (deg C)") +
+  layer(sp.points(as_Spatial(hamburgian_sites), col = "blue")) +
+  layer(sp.polygons(countries, col = "lightgrey", ))
 dev.off()
 
 png("figures/mean_precip.png", 
@@ -300,6 +315,42 @@ png("figures/mean_precip.png",
     height = 3,
     units = "in",
     res = 300)
-levelplot(hamburigan_mean_precip, margin = F)
+levelplot(hamburigan_mean_precip, 
+          margin = F,
+          main = "Mean Precipitation 15k-13.5k BP (mm)",
+          par.settings = rasterTheme(
+            region = sequential_hcl(
+              100, 
+              "Blues",
+              rev = T))) +
+  layer(sp.points(as_Spatial(hamburgian_sites), col = "orange")) +
+  layer(sp.polygons(countries, col = "darkgrey", ))
 dev.off()
-levelplot(crop(temp[[temp_time_range_bp_all_cents[1]]], area_of_interest), margins = F)
+
+# Temp vs. precip plot of sites and random sample
+mean_both_ham <- mean_precip_ham %>%
+  full_join(mean_temp_ham) %>%
+  mutate(Site = ordered(Site, levels = levels(fct_reorder(hamburgian_sites$Site, hamburgian_sites$Latitude))))
+random_sample <- data.frame(
+  site = paste0("Random_", 1:100000),
+  mean_temp_ham = sampleRandom(hamburigan_mean_temp, 100000),
+  mean_precip_ham = sampleRandom(hamburigan_mean_precip, 100000))
+temp_vs_precip_plot <- ggplot(
+  mean_both_ham, 
+  aes(x = mean_temp_ham,
+      y = mean_precip_ham,
+      colour = Site)) +  
+  geom_point(data = random_sample,
+             aes(x = mean_temp_ham,
+                 y = mean_precip_ham),
+             colour = "grey") +
+  labs(x = "Mean Temperature 15k-13.5k BP (deg C)",
+       y = "Mean Precipitation 15k-13.5k BP (mm)") +
+  geom_point() +
+  scale_colour_discrete_qualitative(palette = "Dark2") +
+  theme_cowplot(15) +
+  theme(legend.position = "none")
+save_plot("figures/temp_vs_precip.png",
+          temp_vs_precip_plot,
+          base_aspect_ratio = 1.6,
+          base_height = 4)
