@@ -11,6 +11,7 @@ library(rasterVis)
 library(colorspace)
 library(rnaturalearth)
 library(rnaturalearthdata)
+library(dismo)
 
 rasterOptions(progress = "text")
 
@@ -370,3 +371,88 @@ save_plot("figures/temp_vs_precip.png",
           temp_vs_precip_plot,
           base_aspect_ratio = 1.6,
           base_height = 4)
+
+## temp vs precip for calbp centuries
+
+get_cal_bp_ts <- function(site_name){
+  cat(paste0(site_name, "\n"))
+  site_sub <- filter(hamburgian_sites, Site == site_name) %>% 
+    distinct(Site, CalBP.Pulses_begin, CalBP.Pulses_end)
+  
+  # Get raster names
+  temp_rasters <- temp_look_up %>% 
+    filter(year_BP >= site_sub$CalBP.Pulses_end,
+           year_BP <= site_sub$CalBP.Pulses_begin) %>%
+    pull(names_temp) %>% as.character()
+  
+  precip_rasters <- precip_look_up %>% 
+    filter(year_BP >= site_sub$CalBP.Pulses_end,
+           year_BP <= site_sub$CalBP.Pulses_begin) %>%
+    pull(names_precip) %>% as.character()
+  
+  # Extract values for time series
+  cal_bp_time_series <- data.frame(
+    Site = site_name,
+    year_BP = temp_look_up %>% 
+      filter(year_BP >= site_sub$CalBP.Pulses_end,
+             year_BP <= site_sub$CalBP.Pulses_begin) %>%
+      pull(year_BP) ,
+    temp = as.vector(raster::extract(temp[[temp_rasters]], as_Spatial(site_sub))),
+    precip = as.vector(raster::extract(precip[[precip_rasters]], as_Spatial(site_sub))),
+    stringsAsFactors = F)
+  
+  # Return
+  return(cal_bp_time_series)
+}
+
+# Apply function to extract time series
+cal_bp_time_series <- lapply(hamburgian_sites$Site, 
+       get_cal_bp_ts) %>% bind_rows()
+
+# Obtain a random sample from the time series
+random_sample_ts <- data.frame(
+  site = paste0("Random_", 1:(10000 * length(temp_time_range_bp_all_cents))),
+  temp = as.vector(sampleRandom(temp[[temp_time_range_bp_all_cents]], 10000)),
+  precip = as.vector(sampleRandom(hamburigan_mean_precip, 10000)),
+  stringsAsFactors = F)
+
+# Plot
+temp_vs_precip_ts_plot <- ggplot(
+  cal_bp_time_series, 
+  aes(x = temp,
+      y = precip,
+      colour = Site)) +  
+  geom_point(data = random_sample_ts,
+             aes(x = temp,
+                 y = precip),
+             colour = "grey") +
+  labs(x = "Mean Annual Temperature(deg C)",
+       y = "Annual Precipitation (mm)") +
+  geom_point() +
+  scale_colour_discrete_qualitative(palette = "Dark2") +
+  theme_cowplot(14) +
+  theme(legend.position = "none")
+save_plot("figures/temp_vs_precip_from_time_series.png",
+          temp_vs_precip_ts_plot,
+          base_aspect_ratio = 1.6,
+          base_height = 4)
+
+## Dirty mean based BioClim envelope
+bioclim_envelope_model <- bioclim(stack(hamburigan_mean_temp, hamburigan_mean_precip), 
+        as_Spatial(distinct(hamburgian_sites, Latitude, Longitude)))
+preds <- predict(stack(hamburigan_mean_temp, hamburigan_mean_precip),
+            bioclim_envelope_model)
+levelplot(preds, margin = F) + 
+  layer(sp.points(as_Spatial(hamburgian_sites), col = "white")) +
+  layer(sp.polygons(countries, col = "darkgrey", ))
+png("figures/bioclim_env_mean_raw_preds.png", 
+    width = 6,
+    height = 3,
+    units = "in",
+    res = 300)
+levelplot(preds, 
+          margin = F,
+          main = "BIOCLIM Envelope Raw Predictions") +
+  layer(sp.points(as_Spatial(hamburgian_sites), col = "white")) +
+  layer(sp.polygons(countries, col = "darkgrey", ))
+dev.off()
