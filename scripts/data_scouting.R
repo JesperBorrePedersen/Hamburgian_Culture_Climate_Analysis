@@ -84,21 +84,16 @@ precip_look_up$year_BP <- sapply(
 precip_look_up <- arrange(precip_look_up, year_BP)
 
 # Load site locations 
-hamburgian_sites <- read.csv("data/HamburgianData.csv") %>%
-  select(1:20) %>%
-  mutate(classic_ham = X14.520.Ð.14.100.BP,
-         havelte_grp = X14.750.Ð.14.470.BP,
-         classic_ham_start = 14520,
-         classic_ham_end = 14100,
-         havelte_grp_start = 14750,
-         havelte_grp_end = 14470) %>%
-  select(-X14.520.Ð.14.100.BP,
-         -X14.750.Ð.14.470.BP)
+hamburgian_sites <- read.csv("data/ham_data.csv") %>%
+  mutate(pulse_1_start = 14500,
+         pulse_1_end = 14300,
+         pulse_2_start = 14200,
+         pulse_2_end = 14100)
 
 
 # Covnert to sf object
 hamburgian_sites <- st_as_sf(hamburgian_sites, 
-                             coords = c("Longitude", "Latitude"),
+                             coords = c("long", "lat"),
                              crs = 4326,
                              remove = F)
 # # Make time ranges interpretable
@@ -128,8 +123,8 @@ precip_df <-  as.data.frame(raster::extract(precip,
                                             as_Spatial(hamburgian_sites)))
 
 # Add site column
-temp_df$Site <- hamburgian_sites$Site
-precip_df$Site <- hamburgian_sites$Site
+temp_df$site <- hamburgian_sites$site
+precip_df$site <- hamburgian_sites$site
 
 # Pivot longer
 temp_df <- pivot_longer(temp_df, 1:(ncol(temp_df)-1),
@@ -157,105 +152,112 @@ load("data/precip_df.Rda")
 
 # Mean temp / precip in the two Hamburgian Culture periods
 mean_temp <- temp_df %>% 
-  group_by(Site) %>%
+  group_by(site) %>%
   filter(year_BP >= 13800 & year_BP <= 15000) %>%
   summarise(mean_temp = mean(temp))
-mean_temp_classic <- temp_df %>% 
-  group_by(Site) %>%
-  filter(year_BP >= 14100 & year_BP <= 14520) %>%
-  summarise(mean_temp_classic = mean(temp))
-mean_temp_havelte <- temp_df %>% 
-  group_by(Site) %>%
-  filter(year_BP >= 14470 & year_BP <= 14750) %>%
-  summarise(mean_temp_havelte = mean(temp))
+mean_temp_pulse_1 <- temp_df %>% 
+  group_by(site) %>%
+  filter(year_BP >= 14300 & year_BP <= 14500) %>%
+  summarise(mean_temp_pulse_1 = mean(temp))
+mean_temp_pulse_2 <- temp_df %>% 
+  group_by(site) %>%
+  filter(year_BP >= 14100 & year_BP <= 14200) %>%
+  summarise(mean_temp_pulse_2 = mean(temp))
+
 
 mean_precip <- precip_df %>% 
-  group_by(Site) %>%
+  group_by(site) %>%
   filter(year_BP >= 13800 & year_BP <= 15000) %>%
   summarise(mean_precip = mean(precip))
-mean_precip_classic <- precip_df %>% 
-  group_by(Site) %>%
-  filter(year_BP >= 14100 & year_BP <= 14520) %>%
-  summarise(mean_precip_classic = mean(precip))
-mean_precip_havelte <- precip_df %>% 
-  group_by(Site) %>%
-  filter(year_BP >= 14470 & year_BP <= 14750) %>%
-  summarise(mean_precip_havelte = mean(precip))
+mean_precip_pulse_1 <- precip_df %>% 
+  group_by(site) %>%
+  filter(year_BP >= 14300 & year_BP <= 14500) %>%
+  summarise(mean_precip_pulse_1 = mean(precip))
+mean_precip_pulse_2 <- precip_df %>% 
+  group_by(site) %>%
+  filter(year_BP >= 14100 & year_BP <= 14200) %>%
+  summarise(mean_precip_pulse_2 = mean(precip))
 
 # merge with hamburgian_sites df
 hamburgian_sites <- hamburgian_sites %>%
   full_join(mean_temp) %>%
-  full_join(mean_temp_classic) %>%
-  full_join(mean_temp_havelte) %>%
+  full_join(mean_temp_pulse_1) %>%
+  full_join(mean_temp_pulse_2) %>%
   full_join(mean_precip) %>%
-  full_join(mean_precip_classic) %>%
-  full_join(mean_precip_havelte) 
+  full_join(mean_precip_pulse_1) %>%
+  full_join(mean_precip_pulse_2) 
 
 # tidy up
 rm(mean_temp)
-rm(mean_temp_classic)
-rm(mean_temp_havelte)
+rm(mean_temp_pulse_1)
+rm(mean_temp_pulse_2)
 rm(mean_precip)
-rm(mean_precip_classic)
-rm(mean_precip_havelte)
+rm(mean_precip_pulse_1)
+rm(mean_precip_pulse_2)
 
 
 # set mean temp to NA where no evidence is avialable
-hamburgian_sites$mean_temp_classic[hamburgian_sites$classic_ham == 0] <- NA
-hamburgian_sites$mean_precip_classic[hamburgian_sites$classic_ham == 0] <- NA
-hamburgian_sites$mean_temp_halvelte[hamburgian_sites$havelte_grp == 0] <- NA
-hamburgian_sites$mean_precip_halvelte[hamburgian_sites$havelte_grp == 0] <- NA
+hamburgian_sites$mean_temp_pulse_1[hamburgian_sites$chron_association != "pulse_1"] <- NA
+hamburgian_sites$mean_temp_pulse_2[hamburgian_sites$chron_association != "pulse_2"] <- NA
+hamburgian_sites$mean_precip_pulse_1[hamburgian_sites$chron_association != "pulse_1"] <- NA
+hamburgian_sites$mean_precip_pulse_2[hamburgian_sites$chron_association != "pulse_2"] <- NA
 
-hamburgian_sites$classic_ham_start[hamburgian_sites$classic_ham == 0] <- NA
-hamburgian_sites$classic_ham_end[hamburgian_sites$classic_ham == 0] <- NA
-hamburgian_sites$havelte_grp_start[hamburgian_sites$havelte_grp == 0] <- NA
-hamburgian_sites$havelte_grp_end[hamburgian_sites$havelte_grp == 0] <- NA
+hamburgian_sites$pulse_1_start[hamburgian_sites$chron_association != "pulse_1"] <- NA
+hamburgian_sites$pulse_1_end[hamburgian_sites$chron_association != "pulse_1"] <- NA
+hamburgian_sites$pulse_2_start[hamburgian_sites$chron_association != "pulse_2"] <- NA
+hamburgian_sites$pulse_2_end[hamburgian_sites$chron_association != "pulse_2"] <- NA
+
+# Remove "creswellian" sites
+hamburgian_sites <- hamburgian_sites %>% filter(arch_association != "creswellian")
 
 # Order sites by latitude
 hamburgian_sites <- hamburgian_sites %>%
-  mutate(Site = ordered(Site, levels = levels(fct_reorder(hamburgian_sites$Site, hamburgian_sites$Latitude))))
+  mutate(site = ordered(site, levels = levels(fct_reorder(hamburgian_sites$site, hamburgian_sites$lat))))
 
 # |_ Temp Time-Series Plot ----
 temp_plot <- ggplot(temp_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>%
-                      mutate(Site = ordered(Site, levels = levels(fct_reorder(hamburgian_sites$Site, hamburgian_sites$Latitude)))),
+                      filter(site %in% unique(hamburgian_sites$site)) %>%
+                      mutate(site = ordered(site, levels = levels(fct_reorder(hamburgian_sites$site, hamburgian_sites$lat)))),
        aes(x = year_BP,
            y = temp,
-           colour = Site)) +
+           colour = site)) +
   geom_line() +
   geom_segment(data = hamburgian_sites,
-             mapping = aes(x = classic_ham_end,
-                           xend = classic_ham_start,
-                           y = mean_temp_classic, 
-                           yend = mean_temp_classic),
+             mapping = aes(x = pulse_1_end,
+                           xend = pulse_1_start,
+                           y = mean_temp_pulse_1, 
+                           yend = mean_temp_pulse_1),
              colour = "black") +
   geom_segment(data = hamburgian_sites,
-    mapping = aes(x = havelte_grp_end,
-                  xend = havelte_grp_start,
-                  y = mean_temp_havelte, 
-                  yend = mean_temp_havelte),
+    mapping = aes(x = pulse_2_end,
+                  xend = pulse_2_start,
+                  y = mean_temp_pulse_2, 
+                  yend = mean_temp_pulse_2),
     colour = "black") +
   geom_text(data = hamburgian_sites,
-            mapping = aes(x = havelte_grp_start + 100,
-                             y = mean_temp_havelte, 
-                             label = paste0("mean:\n", round(mean_temp_havelte,1), "°C")),
-               colour = "black",
+            mapping = aes(x = pulse_1_start + 100,
+                          y = mean_temp_pulse_1,
+                          label = paste0("mean:\n", round(mean_temp_pulse_1,1), "°C")),
             vjust = 0.5,
-            hjust = 1) +
+            hjust = 1,
+            size = 2,
+            colour = "black") +
   geom_text(data = hamburgian_sites,
-            mapping = aes(x = classic_ham_end - 100, 
-                          y = mean_temp_classic,
-                          label = paste0("mean:\n", round(mean_temp_classic,1), "°C")),
+            mapping = aes(x = pulse_2_start - 200,
+                          y = mean_temp_pulse_2,
+                          label = paste0("mean:\n", round(mean_temp_pulse_2,1), "°C")),
+            colour = "black",
             vjust = 0.5,
             hjust = 0,
-            colour = "black") +
+            size = 2) +
   labs(x = "Year BP", y = "Annual Mean Temp °C (Bio01)") +
   scale_x_reverse(limits = c(15500, 13000),
                   breaks = seq(15500, 13000, -500),
                   labels = rev(c("13.0k", "13.5k", "14.0k", "14.5k", "15.0k", "15.5k"))) +
   scale_y_continuous(limits = c(-7, 10),
-                     breaks = seq(-6,9,3)) +
+                     breaks = c(-5,0,5,10)) +
   scale_colour_discrete_qualitative(palette = "Dark2") +
-  theme_cowplot(15) +
+  theme_cowplot(8) +
   theme(legend.position = "none",
         strip.background = element_rect(fill = NA),
         axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
@@ -266,7 +268,7 @@ save_plot("figures/figure1_temp.png",
           base_height = 4)
 
 # Plot per site
-temp_plot <- temp_plot + facet_wrap(vars(Site),
+temp_plot <- temp_plot + facet_wrap(vars(site),
                                     scales = "free") +
   theme(axis.title = element_text(face = "bold"))
 save_plot("figures/figure1_temp_by_site.png",
@@ -276,45 +278,47 @@ save_plot("figures/figure1_temp_by_site.png",
 
 # |_ Precip Time-Series Plot ----
 precip_plot <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>%
-                      mutate(Site = ordered(Site, levels = levels(fct_reorder(hamburgian_sites$Site, hamburgian_sites$Latitude)))),
+                      mutate(site = ordered(site, levels = levels(fct_reorder(hamburgian_sites$site, hamburgian_sites$lat)))),
                     aes(x = year_BP,
                         y = precip,
-                        colour = Site)) +
+                        colour = site)) +
   geom_line() +
   geom_segment(data = hamburgian_sites,
-               mapping = aes(x = classic_ham_end,
-                             xend = classic_ham_start,
-                             y = mean_precip_classic, 
-                             yend = mean_precip_classic),
+               mapping = aes(x = pulse_1_end,
+                             xend = pulse_1_start,
+                             y = mean_precip_pulse_1, 
+                             yend = mean_precip_pulse_1),
                colour = "black") +
   geom_segment(data = hamburgian_sites,
-               mapping = aes(x = havelte_grp_end,
-                             xend = havelte_grp_start,
-                             y = mean_precip_havelte, 
-                             yend = mean_precip_havelte),
+               mapping = aes(x = pulse_2_end,
+                             xend = pulse_2_start,
+                             y = mean_precip_pulse_2, 
+                             yend = mean_precip_pulse_2),
                colour = "black") +
   geom_text(data = hamburgian_sites,
-            mapping = aes(x = havelte_grp_start + 100,
-                          y = mean_precip_havelte, 
-                          label = paste0("mean:\n", round(mean_precip_havelte,1), "°C")),
+            mapping = aes(x = pulse_1_start + 100,
+                          y = mean_precip_pulse_1,
+                          label = paste0("mean:\n", round(mean_precip_pulse_1,1), "mm")),
+            vjust = 0.5,
+            hjust = 1,
+            size = 2,
+            colour = "black") +
+  geom_text(data = hamburgian_sites,
+            mapping = aes(x = pulse_2_start - 200,
+                          y = mean_precip_pulse_2,
+                          label = paste0("mean:\n", round(mean_precip_pulse_2,1), "mm")),
             colour = "black",
             vjust = 0.5,
-            hjust = 1) +
-  geom_text(data = hamburgian_sites,
-            mapping = aes(x = classic_ham_end - 100, 
-                          y = mean_precip_classic,
-                          label = paste0("mean:\n", round(mean_precip_classic,1), "°C")),
-            vjust = 0.5,
             hjust = 0,
-            colour = "black") +
-  labs(x = "Year BP", y = "Annual Precipitation mm (Bio12)") +
+            size = 2,) +
+  labs(x = "Year BP", y = "Annual Precipitation [mm] (Bio12)") +
   scale_x_reverse(limits = c(15500, 13000),
                   breaks = seq(15500, 13000, -500),
                   labels = rev(c("13.0k", "13.5k", "14.0k", "14.5k", "15.0k", "15.5k"))) +
   scale_y_continuous(limits = c(400, 1100),
                      breaks = seq(400,1200,200)) +
   scale_colour_discrete_qualitative(palette = "Dark2") +
-  theme_cowplot(15) +
+  theme_cowplot(8) +
   theme(legend.position = "none",
         strip.background = element_rect(fill = NA),
         axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
@@ -325,7 +329,7 @@ save_plot("figures/figure1_precip.png",
           base_height = 4)
 
 # Plot per site
-precip_plot <- precip_plot + facet_wrap(vars(Site),
+precip_plot <- precip_plot + facet_wrap(vars(site),
                                     scales = "free") +
   theme(axis.title = element_text(face = "bold"))
 save_plot("figures/figure1_precip_by_site.png",
@@ -334,19 +338,21 @@ save_plot("figures/figure1_precip_by_site.png",
           base_height = 20)
 
 ## 3) Raster Maps ----
-area_of_interest <- extent(c(-11,30,50,60)) 
+area_of_interest <- extent(c(-11,32,49,60)) 
 time_range_bp <- data.frame(min_bp = 15000-2000,
                          max_bp = 13800-2000,
                          min_cent = 150-20,
                          max_cent = 138-20,
-                         classic_ham_start = 14520-2000,
-                         classic_ham_end = 14100-2000,
-                         havelte_grp_start = 14750-2000,
-                         havelte_grp_end = 14470-2000,
-                         classic_ham_min_cent = 145-20,
-                         classic_ham_max_cent = 141-20,
-                         havelte_grp_min_cent = 147-20,
-                         havelte_grp_max_cent = 145-20)
+                         pulse_1_start = 14500-2000,
+                         pulse_1_end = 14300-2000,
+                         pulse_2_start = 14200-2000,
+                         pulse_2_end = 14100-2000,
+                         pulse_1_min_cent = 145-20,
+                         pulse_1_max_cent = 143-20,
+                         pulse_2_min_cent = 142-20,
+                         pulse_2_max_cent = 141-20)
+
+
 
 ## calculate average values for the broad time-range
 # Temperature
@@ -356,17 +362,17 @@ temp_time_range_bp_all_cents <- paste0(
   "_BCE")
 hamburgian_mean_temp <- mean(crop(temp[[temp_time_range_bp_all_cents]], area_of_interest))
 
-temp_time_range_bp_classic_ham <- paste0(
+temp_time_range_bp_pulse_1 <- paste0(
   "temp_",
-  seq(time_range_bp$classic_ham_max_cent, time_range_bp$classic_ham_min_cent, 1),
+  seq(time_range_bp$pulse_1_max_cent, time_range_bp$pulse_1_min_cent, 1),
   "_BCE")
-hamburgian_mean_temp_classic_ham <- mean(crop(temp[[temp_time_range_bp_classic_ham]], area_of_interest))
+hamburgian_mean_temp_pulse_1 <- mean(crop(temp[[temp_time_range_bp_pulse_1]], area_of_interest))
 
-temp_time_range_bp_havelte_grp <- paste0(
+temp_time_range_bp_pulse_2 <- paste0(
   "temp_",
-  seq(time_range_bp$havelte_grp_max_cent, time_range_bp$havelte_grp_min_cent, 1),
+  seq(time_range_bp$pulse_2_max_cent, time_range_bp$pulse_2_min_cent, 1),
   "_BCE")
-hamburgian_mean_temp_havelte_grp <- mean(crop(temp[[temp_time_range_bp_havelte_grp]], area_of_interest))
+hamburgian_mean_temp_pulse_2 <- mean(crop(temp[[temp_time_range_bp_pulse_2]], area_of_interest))
 
 # Precip
 precip_time_range_bp_all_cents <- paste0(
@@ -375,39 +381,47 @@ precip_time_range_bp_all_cents <- paste0(
   "_BCE")
 hamburgian_mean_precip <- mean(crop(precip[[precip_time_range_bp_all_cents]], area_of_interest))
 
-precip_time_range_bp_classic_ham <- paste0(
+precip_time_range_bp_pulse_1 <- paste0(
   "precip_",
-  seq(time_range_bp$classic_ham_max_cent, time_range_bp$classic_ham_min_cent, 1),
+  seq(time_range_bp$pulse_1_max_cent, time_range_bp$pulse_1_min_cent, 1),
   "_BCE")
-hamburgian_mean_precip_classic_ham <- mean(crop(precip[[precip_time_range_bp_classic_ham]], area_of_interest))
+hamburgian_mean_precip_pulse_1 <- mean(crop(precip[[precip_time_range_bp_pulse_1]], area_of_interest))
 
-precip_time_range_bp_havelte_grp <- paste0(
+precip_time_range_bp_pulse_2 <- paste0(
   "precip_",
-  seq(time_range_bp$havelte_grp_max_cent, time_range_bp$havelte_grp_min_cent, 1),
+  seq(time_range_bp$pulse_2_max_cent, time_range_bp$pulse_2_min_cent, 1),
   "_BCE")
-hamburgian_mean_precip_havelte_grp <- mean(crop(precip[[precip_time_range_bp_havelte_grp]], area_of_interest))
+hamburgian_mean_precip_pulse_2 <- mean(crop(precip[[precip_time_range_bp_pulse_2]], area_of_interest))
 
 ## Save rasters for future use
 writeRaster(hamburgian_mean_temp, 
             "data/mean_rasters/hamburgian_mean_temp.tif",
             overwrite = T)
-writeRaster(hamburgian_mean_temp_classic_ham, 
-            "data/mean_rasters/hamburgian_mean_temp_classic_ham.tif",
+writeRaster(hamburgian_mean_temp_pulse_1, 
+            "data/mean_rasters/hamburgian_mean_temp_pulse_1.tif",
             overwrite = T)
-writeRaster(hamburgian_mean_temp_havelte_grp, 
-            "data/mean_rasters/hamburgian_mean_temp_havelte_grp.tif",
+writeRaster(hamburgian_mean_temp_pulse_2, 
+            "data/mean_rasters/hamburgian_mean_temp_pulse_2.tif",
             overwrite = T)
 
 writeRaster(hamburgian_mean_precip, 
             "data/mean_rasters/hamburgian_mean_precip.tif",
             overwrite = T)
-writeRaster(hamburgian_mean_precip_classic_ham, 
-            "data/mean_rasters/hamburgian_mean_precip_classic_ham.tif",
+writeRaster(hamburgian_mean_precip_pulse_1, 
+            "data/mean_rasters/hamburgian_mean_precip_pulse_1.tif",
             overwrite = T)
-writeRaster(hamburgian_mean_precip_havelte_grp, 
-            "data/mean_rasters/hamburgian_mean_precip_havelte_grp.tif",
+writeRaster(hamburgian_mean_precip_pulse_2, 
+            "data/mean_rasters/hamburgian_mean_precip_pulse_2.tif",
             overwrite = T)
 
+# Load rasters
+hamburgian_mean_temp <- raster("data/mean_rasters/hamburgian_mean_temp.tif")
+hamburgian_mean_temp_pulse_1 <- raster("data/mean_rasters/hamburgian_mean_temp_pulse_1.tif")
+hamburgian_mean_temp_pulse_2 <- raster("data/mean_rasters/hamburgian_mean_temp_pulse_2.tif")
+
+hamburgian_mean_precip <- raster("data/mean_rasters/hamburgian_mean_precip.tif")
+hamburgian_mean_precip_pulse_1 <- raster("data/mean_rasters/hamburgian_mean_precip_pulse_1.tif")
+hamburgian_mean_precip_pulse_2 <- raster("data/mean_rasters/hamburgian_mean_precip_pulse_2.tif")
 
 ## Plot mean maps
 
@@ -446,574 +460,367 @@ ice_for_maps <- ice %>%
 hamburgian_sites <- st_transform(hamburgian_sites, st_crs(hamburgian_mean_temp))
 hamburgian_sites_sp <- as_Spatial(hamburgian_sites)
 
+
 # |_ Temp Maps ----
+# Define Function to plot temp map
+plot_ham_temp_map <- function(base_raster,
+                              main_title,
+                              file_name){
+  cat(paste0("Plotting ", file_name, "...\n"))
+  
+  png(file_name, 
+      width = 6,
+      height = 3,
+      units = "in",
+      res = 300)
+  print(levelplot(get(base_raster, envir = .GlobalEnv), 
+                  margin = F,
+                  main = main_title,
+                  at = seq(-12, 12, 1)) +
+          latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
+          latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
+          latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
+          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
+                                        col = "gray90", pch = 63, cex = 0.8)) +
+          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
+                                        col = "dodgerblue2", pch = 1, cex = 1.05)) +
+          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
+                                        col = "black", pch = 3)) +
+          
+          latticeExtra::layer({
+            centre_x <- 27.5
+            centre_y <- 58.3
+            grid.rect(x=centre_x, y=centre_y,
+                      width=7.5, height=2.5,
+                      gp=gpar(fill="white",
+                              col = "black",
+                              alpha = 0.9),
+                      default.units='native')
+            
+            
+            grid.points(#label = "Pulse 1",
+              x=centre_x-2.75, y=centre_y+2.5/4,
+              pch = 1,
+              gp=gpar(cex = 0.65,
+                      col = "dodgerblue2"),
+              default.units='native')
+            grid.points(#label = "Pulse 2",
+              x=centre_x-2.75, y=centre_y,
+              pch = 3,
+              gp=gpar(cex = 0.4,
+                      col = "black"),
+              default.units='native')
+            grid.points(#label = "Uncertain",
+              x=centre_x-2.75, y=centre_y-2.5/4,
+              pch = 63,
+              gp=gpar(cex = 0.65,
+                      col = "grey30"),
+              default.units='native')
+            
+            grid.text(label = "Pulse 1",
+                      x=centre_x-1.75, y=centre_y+2.5/4,
+                      #just = "left",
+                      hjust = 0,
+                      vjust = 0.4,
+                      gp=gpar(cex=0.5,
+                              col = "black"),
+                      default.units='native')
+            grid.text(label = "Pusle 2",
+                      x=centre_x-1.75, y=centre_y,
+                      #just = "left",
+                      hjust = 0,
+                      vjust = 0.4,
+                      gp=gpar(cex=0.5,
+                              col = "black"),
+                      default.units='native')
+            grid.text(label = "Uncertain",
+                      x=centre_x-1.75, y=centre_y-2.5/4,
+                      #just = "left",
+                      hjust = 0,
+                      vjust = 0.4,
+                      gp=gpar(cex=0.5,
+                              col = "black"),
+                      default.units='native')
+          }))
+  dev.off()
+  return("Done.")
+}
+
 # Mean preciptation map 15k-13.5k BP
-png("figures/mean_temp.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(hamburgian_mean_temp, 
-          margin = F,
-          main = "Mean Temperature 15k-13.5k BP (°C)",
-          at = seq(-12, 12, 1)) +
-  latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 0.75)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Classic Hamburgian",],
-                                col = "dodgerblue2", pch = 1, cex = 1.05)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Havelte Group",],
-                                col = "black", pch = 3)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Possibly Hamburgian",],
-                                col = "gray90", pch = 63, cex = 1.05)) +
-  latticeExtra::layer({
-    centre_x <- 25.5
-    centre_y <- 51.5
-    grid.rect(x=centre_x, y=centre_y,
-              width=7.5, height=2.5,
-              gp=gpar(fill="white", 
-                      col = "black",
-                      alpha = 0.75),
-              default.units='native')
-    
-    grid.points(#label = "Hamburgian",
-      x=centre_x-2.75, y=centre_y+2.5/4,
-      pch = 1,
-      gp=gpar(cex = 0.65, 
-              col = "dodgerblue2"),
-      default.units='native')
-    grid.points(#label = "Havelte Group",
-      x=centre_x-2.75, y=centre_y,
-      pch = 3,
-      gp=gpar(cex = 0.4, 
-              col = "black"),
-      default.units='native')
-    grid.points(#label = "Possibly Ham.",
-      x=centre_x-2.75, y=centre_y-2.5/4,
-      pch = 63,
-      gp=gpar(cex = 0.65, 
-              col = "grey30"),
-      default.units='native')
-    
-    grid.text(label = "Hamburgian",
-              x=centre_x-1.75, y=centre_y+2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Havelte Group",
-              x=centre_x-1.75, y=centre_y,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Possibly Ham.",
-              x=centre_x-1.75, y=centre_y-2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-  })
-dev.off()
+plot_ham_temp_map(base_raster = "hamburgian_mean_temp",
+                  main_title = "Mean Temperature 15k-13.5k BP (°C)",
+                  file_name = "figures/mean_temp.png")
+# Mean temperature map Pulse 1 14.5k-14.3k BP
+plot_ham_temp_map(base_raster = "hamburgian_mean_temp_pulse_1",
+                  main_title = "Mean Temperature 14.5k-14.3k BP (°C)",
+                  file_name = "figures/mean_temp_pulse_1.png")
 
-
-# Mean temperature map Classic Hamburgian 14.5k-14.1k BP
-png("figures/mean_temp_classic_ham.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(hamburgian_mean_temp_classic_ham, 
-          margin = F,
-          main = "Mean Temperature 14.5k-14.1k BP (°C)",
-          at = seq(-12, 12, 1)) +
-  latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 0.75)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Classic Hamburgian",],
-                                col = "dodgerblue2", pch = 1, cex = 1.05)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Havelte Group",],
-                                col = "black", pch = 3)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Possibly Hamburgian",],
-                                col = "gray90", pch = 63, cex = 1.05)) +
-  latticeExtra::layer({
-    centre_x <- 25.5
-    centre_y <- 51.5
-    grid.rect(x=centre_x, y=centre_y,
-              width=7.5, height=2.5,
-              gp=gpar(fill="white", 
-                      col = "black",
-                      alpha = 0.75),
-              default.units='native')
-    
-    grid.points(#label = "Hamburgian",
-      x=centre_x-2.75, y=centre_y+2.5/4,
-      pch = 1,
-      gp=gpar(cex = 0.65, 
-              col = "dodgerblue2"),
-      default.units='native')
-    grid.points(#label = "Havelte Group",
-      x=centre_x-2.75, y=centre_y,
-      pch = 3,
-      gp=gpar(cex = 0.4, 
-              col = "black"),
-      default.units='native')
-    grid.points(#label = "Possibly Ham.",
-      x=centre_x-2.75, y=centre_y-2.5/4,
-      pch = 63,
-      gp=gpar(cex = 0.65, 
-              col = "grey30"),
-      default.units='native')
-    
-    grid.text(label = "Hamburgian",
-              x=centre_x-1.75, y=centre_y+2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Havelte Group",
-              x=centre_x-1.75, y=centre_y,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Possibly Ham.",
-              x=centre_x-1.75, y=centre_y-2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-  })
-dev.off()
-
-
-# Mean temperature map Havelte 14.7k-14.5k BP
-png("figures/mean_temp_havelte_grp.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(hamburgian_mean_temp_havelte_grp, 
-          margin = F,
-          main = "Mean Temperature 14.7k-14.5k BP (°C)",
-          at = seq(-12, 12, 1)) +
-  latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 0.75)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Classic Hamburgian",],
-                                col = "dodgerblue2", pch = 1, cex = 1.05)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Havelte Group",],
-                                col = "black", pch = 3)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Possibly Hamburgian",],
-                                col = "gray90", pch = 63, cex = 1.05)) +
-  latticeExtra::layer({
-    centre_x <- 25.5
-    centre_y <- 51.5
-    grid.rect(x=centre_x, y=centre_y,
-              width=7.5, height=2.5,
-              gp=gpar(fill="white", 
-                      col = "black",
-                      alpha = 0.75),
-              default.units='native')
-    
-    grid.points(#label = "Hamburgian",
-      x=centre_x-2.75, y=centre_y+2.5/4,
-      pch = 1,
-      gp=gpar(cex = 0.65, 
-              col = "dodgerblue2"),
-      default.units='native')
-    grid.points(#label = "Havelte Group",
-      x=centre_x-2.75, y=centre_y,
-      pch = 3,
-      gp=gpar(cex = 0.4, 
-              col = "black"),
-      default.units='native')
-    grid.points(#label = "Possibly Ham.",
-      x=centre_x-2.75, y=centre_y-2.5/4,
-      pch = 63,
-      gp=gpar(cex = 0.65, 
-              col = "grey30"),
-      default.units='native')
-    
-    grid.text(label = "Hamburgian",
-              x=centre_x-1.75, y=centre_y+2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Havelte Group",
-              x=centre_x-1.75, y=centre_y,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Possibly Ham.",
-              x=centre_x-1.75, y=centre_y-2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-  })
-dev.off()
+# Mean temperature map Pulse 2 14.2k-14.1k BP
+plot_ham_temp_map(base_raster = "hamburgian_mean_temp_pulse_2",
+                  main_title = "Mean Temperature 14.2k-14.1k BP (°C)",
+                  file_name = "figures/mean_temp_pulse_2.png")
 
 # |_ Precip Maps ----
 
-# Mean preciptation map 15k-13.5k BP
-png("figures/mean_precip.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(hamburgian_mean_precip, 
-          margin = F,
-          main = "Mean Precipitation 15k-13.5k BP (mm)",
-          at = seq(0, 2500, 2500/20),
-          par.settings = rasterTheme(
-            region = sequential_hcl(
-              100, 
-              "Blues",
-              rev = T))) + 
-  latticeExtra::layer(sp.polygons(land_for_maps, col = "white", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 0.75)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Classic Hamburgian",],
-                                col = "dodgerblue2", pch = 1, cex = 1.05)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Havelte Group",],
-                                col = "black", pch = 3)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Possibly Hamburgian",],
-                                col = "grey30", pch = 63, cex = 1.05)) +
-  latticeExtra::layer({
-    centre_x <- 25.5
-    centre_y <- 51.5
-    grid.rect(x=centre_x, y=centre_y,
-              width=7.5, height=2.5,
-              gp=gpar(fill="white", 
-                      col = "black",
-                      alpha = 0.75),
-              default.units='native')
-    
-    grid.points(#label = "Hamburgian",
-      x=centre_x-2.75, y=centre_y+2.5/4,
-      pch = 1,
-      gp=gpar(cex = 0.65, 
-              col = "dodgerblue2"),
-      default.units='native')
-    grid.points(#label = "Havelte Group",
-      x=centre_x-2.75, y=centre_y,
-      pch = 3,
-      gp=gpar(cex = 0.4, 
-              col = "black"),
-      default.units='native')
-    grid.points(#label = "Possibly Ham.",
-      x=centre_x-2.75, y=centre_y-2.5/4,
-      pch = 63,
-      gp=gpar(cex = 0.65, 
-              col = "grey30"),
-      default.units='native')
-    
-    grid.text(label = "Hamburgian",
-              x=centre_x-1.75, y=centre_y+2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Havelte Group",
-              x=centre_x-1.75, y=centre_y,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Possibly Ham.",
-              x=centre_x-1.75, y=centre_y-2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-  })
-dev.off()
+# Define Function to plot precip map
+plot_ham_precip_map <- function(base_raster,
+                              main_title,
+                              file_name){
+  cat(paste0("Plotting ", file_name, "...\n"))
 
-# Mean preciptation map 14.5k-14.1k BP
-png("figures/mean_precip_classic_ham.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(hamburgian_mean_precip_classic_ham, 
-          margin = F,
-          main = "Mean Precipitation 14.5k-14.1k BP (mm)",
-          at = seq(0, 2500, 2500/20),
-          par.settings = rasterTheme(
-            region = sequential_hcl(
-              100, 
-              "Blues",
-              rev = T))) + 
-  latticeExtra::layer(sp.polygons(land_for_maps, col = "white", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 0.75)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Classic Hamburgian",],
-                                col = "dodgerblue2", pch = 1, cex = 1.05)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Havelte Group",],
-                                col = "black", pch = 3)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Possibly Hamburgian",],
-                                col = "grey30", pch = 63, cex = 1.05)) +
-  latticeExtra::layer({
-    centre_x <- 25.5
-    centre_y <- 51.5
-    grid.rect(x=centre_x, y=centre_y,
-              width=7.5, height=2.5,
-              gp=gpar(fill="white", 
-                      col = "black",
-                      alpha = 0.75),
+  png(file_name, 
+      width = 6,
+      height = 3,
+      units = "in",
+      res = 300)
+  print(levelplot(get(base_raster, envir = .GlobalEnv), 
+                  margin = F,
+                  main = main_title,
+                  at = seq(0, 2500, 2500/20),
+                  par.settings = rasterTheme(
+                    region = sequential_hcl(
+                      100, 
+                      "Blues",
+                      rev = T))) + 
+          latticeExtra::layer(sp.polygons(land_for_maps, col = "white", alpha = 1)) +
+          latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
+          latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
+          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
+                                        col = "grey30", pch = 63, cex = 0.8)) +
+          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
+                                        col = "dodgerblue2", pch = 1, cex = 1.05)) +
+          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
+                                        col = "black", pch = 3)) +
+          latticeExtra::layer({
+            centre_x <- 27.5
+            centre_y <- 58.3
+            grid.rect(x=centre_x, y=centre_y,
+                      width=7.5, height=2.5,
+                      gp=gpar(fill="white", 
+                              col = "black",
+                              alpha = 0.9),
+                      default.units='native')
+            
+            grid.points(#label = "Hamburgian",
+              x=centre_x-2.75, y=centre_y+2.5/4,
+              pch = 1,
+              gp=gpar(cex = 0.65, 
+                      col = "dodgerblue2"),
               default.units='native')
-    
-    grid.points(#label = "Hamburgian",
-      x=centre_x-2.75, y=centre_y+2.5/4,
-      pch = 1,
-      gp=gpar(cex = 0.65, 
-              col = "dodgerblue2"),
-      default.units='native')
-    grid.points(#label = "Havelte Group",
-      x=centre_x-2.75, y=centre_y,
-      pch = 3,
-      gp=gpar(cex = 0.4, 
-              col = "black"),
-      default.units='native')
-    grid.points(#label = "Possibly Ham.",
-      x=centre_x-2.75, y=centre_y-2.5/4,
-      pch = 63,
-      gp=gpar(cex = 0.65, 
-              col = "grey30"),
-      default.units='native')
-    
-    grid.text(label = "Hamburgian",
-              x=centre_x-1.75, y=centre_y+2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
+            grid.points(#label = "Havelte Group",
+              x=centre_x-2.75, y=centre_y,
+              pch = 3,
+              gp=gpar(cex = 0.4, 
                       col = "black"),
               default.units='native')
-    grid.text(label = "Havelte Group",
-              x=centre_x-1.75, y=centre_y,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
+            grid.points(#label = "Possibly Ham.",
+              x=centre_x-2.75, y=centre_y-2.5/4,
+              pch = 63,
+              gp=gpar(cex = 0.65, 
+                      col = "grey30"),
               default.units='native')
-    grid.text(label = "Possibly Ham.",
-              x=centre_x-1.75, y=centre_y-2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-  })
-dev.off()
+            
+            grid.text(label = "Pulse 1",
+                      x=centre_x-1.75, y=centre_y+2.5/4,
+                      #just = "left",
+                      hjust = 0,
+                      vjust = 0.4,
+                      gp=gpar(cex=0.5, 
+                              col = "black"),
+                      default.units='native')
+            grid.text(label = "Pulse 2",
+                      x=centre_x-1.75, y=centre_y,
+                      #just = "left",
+                      hjust = 0,
+                      vjust = 0.4,
+                      gp=gpar(cex=0.5, 
+                              col = "black"),
+                      default.units='native')
+            grid.text(label = "Uncertain",
+                      x=centre_x-1.75, y=centre_y-2.5/4,
+                      #just = "left",
+                      hjust = 0,
+                      vjust = 0.4,
+                      gp=gpar(cex=0.5, 
+                              col = "black"),
+                      default.units='native')
+          }))
+        dev.off()
+}
+
+# Mean preciptation map 15k-13.5k BP
+plot_ham_precip_map(base_raster = "hamburgian_mean_precip",
+                  main_title = "Mean Precipitation 15k-13.5k BP (mm)",
+                  file_name = "figures/mean_precip.png")
+
+# Mean preciptation map 14.5k-14.3k BP
+plot_ham_precip_map(base_raster = "hamburgian_mean_precip_pulse_1",
+                    main_title = "Mean Precipitation 14.5k-14.3k BP (mm)",
+                    file_name = "figures/mean_precip_pulse_1.png")
 
 
 # Mean preciptation map 14.7k-14.5k BP
-png("figures/mean_precip_havelte_grp.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(hamburgian_mean_precip_havelte_grp, 
-          margin = F,
-          main = "Mean Precipitation 14.7k-14.5k BP (mm)",
-          at = seq(0, 2500, 2500/20),
-          par.settings = rasterTheme(
-            region = sequential_hcl(
-              100, 
-              "Blues",
-              rev = T))) + 
-  latticeExtra::layer(sp.polygons(land_for_maps, col = "white", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 0.5)) +
-  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 0.75)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Classic Hamburgian",],
-                                col = "dodgerblue2", pch = 1, cex = 1.05)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Havelte Group",],
-                                col = "black", pch = 3)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Possibly Hamburgian",],
-                                col = "grey30", pch = 63, cex = 1.05)) +
-  latticeExtra::layer({
-    centre_x <- 25.5
-    centre_y <- 51.5
-    grid.rect(x=centre_x, y=centre_y,
-              width=7.5, height=2.5,
-              gp=gpar(fill="white", 
-                      col = "black",
-                      alpha = 0.75),
-              default.units='native')
-    
-    grid.points(#label = "Hamburgian",
-      x=centre_x-2.75, y=centre_y+2.5/4,
-      pch = 1,
-      gp=gpar(cex = 0.65, 
-              col = "dodgerblue2"),
-      default.units='native')
-    grid.points(#label = "Havelte Group",
-      x=centre_x-2.75, y=centre_y,
-      pch = 3,
-      gp=gpar(cex = 0.4, 
-              col = "black"),
-      default.units='native')
-    grid.points(#label = "Possibly Ham.",
-      x=centre_x-2.75, y=centre_y-2.5/4,
-      pch = 63,
-      gp=gpar(cex = 0.65, 
-              col = "grey30"),
-      default.units='native')
-    
-    grid.text(label = "Hamburgian",
-              x=centre_x-1.75, y=centre_y+2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Havelte Group",
-              x=centre_x-1.75, y=centre_y,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Possibly Ham.",
-              x=centre_x-1.75, y=centre_y-2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-  })
-dev.off()
+plot_ham_precip_map(base_raster = "hamburgian_mean_precip_pulse_2",
+                    main_title = "Mean Precipitation 14.2k-14.1k BP (mm)",
+                    file_name = "figures/mean_precip_pulse_2.png")
 
 # 3) Temp vs. Precip Plot ---- 
 
 # Cross check with extraction from rasters
 mean_both_ham_extract <- data.frame(
-  Site = unique(hamburgian_sites$Site),
+  site = unique(hamburgian_sites$site),
   mean_temp = raster::extract(hamburgian_mean_temp, as_Spatial(hamburgian_sites)),
   mean_precip = raster::extract(hamburgian_mean_precip, as_Spatial(hamburgian_sites)),
-  mean_temp_classic = raster::extract(hamburgian_mean_temp_classic_ham, as_Spatial(hamburgian_sites)),
-  mean_precip_classic = raster::extract(hamburgian_mean_precip_classic_ham, as_Spatial(hamburgian_sites)),
-  mean_temp_havelte = raster::extract(hamburgian_mean_temp_havelte_grp, as_Spatial(hamburgian_sites)),
-  mean_precip_havelte = raster::extract(hamburgian_mean_precip_havelte_grp, as_Spatial(hamburgian_sites))
+  mean_temp_pulse_1 = raster::extract(hamburgian_mean_temp_pulse_1, as_Spatial(hamburgian_sites)),
+  mean_precip_pulse_1 = raster::extract(hamburgian_mean_precip_pulse_1, as_Spatial(hamburgian_sites)),
+  mean_temp_pulse_2 = raster::extract(hamburgian_mean_temp_pulse_2, as_Spatial(hamburgian_sites)),
+  mean_precip_pulse_2 = raster::extract(hamburgian_mean_precip_pulse_2, as_Spatial(hamburgian_sites))
 ) %>% 
   as_tibble() %>%
-  mutate(Site = ordered(Site, levels = levels(fct_reorder(hamburgian_sites$Site, hamburgian_sites$Latitude))))
+  mutate(site = ordered(site, levels = levels(fct_reorder(hamburgian_sites$site, hamburgian_sites$lat))))
 all_equal(hamburgian_sites %>%
             st_drop_geometry() %>% 
-            select(Site,
+            select(site,
                  mean_temp,
-                 mean_precip,
-                 mean_temp_classic,
-                 mean_temp_havelte,
-                 mean_precip_classic,
-                 mean_precip_havelte),
-          mean_both_ham_extract)
+                 mean_precip) %>% tibble(),
+          mean_both_ham_extract %>% 
+            select(site,
+                   mean_temp,
+                   mean_precip))
 
 set.seed(6)
 
 # Mask rasters
-hamburgian_mean_temp_classic_ham_masked <- mask(
-  hamburgian_mean_temp_classic_ham,
+hamburgian_mean_temp_masked <- mask(
+  hamburgian_mean_temp,
   land_for_maps)
-hamburgian_mean_precip_classic_ham_masked <- mask(
-  hamburgian_mean_precip_classic_ham,
+hamburgian_mean_precip_masked <- mask(
+  hamburgian_mean_precip,
   land_for_maps)
 
-hamburgian_mean_temp_havelte_grp_masked <- mask(
-  hamburgian_mean_temp_havelte_grp,
+hamburgian_mean_temp_pulse_1_masked <- mask(
+  hamburgian_mean_temp_pulse_1,
   land_for_maps)
-hamburgian_mean_precip_havelte_grp_masked <- mask(
-  hamburgian_mean_precip_havelte_grp,
+hamburgian_mean_precip_pulse_1_masked <- mask(
+  hamburgian_mean_precip_pulse_1,
+  land_for_maps)
+
+hamburgian_mean_temp_pulse_2_masked <- mask(
+  hamburgian_mean_temp_pulse_2,
+  land_for_maps)
+hamburgian_mean_precip_pulse_2_masked <- mask(
+  hamburgian_mean_precip_pulse_2,
   land_for_maps)
 
 # Optain random sample for land areas from masked rasters
+set.seed(56)
 random_sample <- data.frame(
   site = paste0("Random_", 1:100000),
-  mean_temp_classic = sampleRandom(hamburgian_mean_temp_classic_ham_masked, 100000),
-  mean_precip_classic = sampleRandom(hamburgian_mean_precip_classic_ham_masked, 100000),
-  mean_temp_havelte = sampleRandom(hamburgian_mean_temp_havelte_grp_masked, 100000),
-  mean_precip_havelte = sampleRandom(hamburgian_mean_precip_havelte_grp_masked, 100000))
+  mean_temp = sampleRandom(hamburgian_mean_temp_masked, 100000),
+  mean_precip = sampleRandom(hamburgian_mean_precip_masked, 100000),
+  mean_temp_pulse_1 = sampleRandom(hamburgian_mean_temp_pulse_1_masked, 100000),
+  mean_precip_pulse_1 = sampleRandom(hamburgian_mean_precip_pulse_1_masked, 100000),
+  mean_temp_pulse_2 = sampleRandom(hamburgian_mean_temp_pulse_2_masked, 100000),
+  mean_precip_pulse_2 = sampleRandom(hamburgian_mean_precip_pulse_2_masked, 100000))
 
+# Plot mean
 temp_vs_precip_plot <- ggplot() +  
   geom_point(data = random_sample,
-             aes(x = mean_temp_classic,
-                 y = mean_precip_classic),
+             aes(x = mean_temp,
+                 y = mean_precip),
+             colour = "grey",
+             fill = "grey",
+             alpha = 0.25,
+             shape = 21
+  ) +
+  geom_point(data = hamburgian_sites %>% mutate(chron_association = ordered(chron_association,
+                                                                            levels = c("uncertain",
+                                                                                       "pulse_2",
+                                                                                       "pulse_1"))) %>%
+               arrange(chron_association),
+             aes(x = mean_temp,
+                 y = mean_precip,
+                 colour = chron_association,
+                 fill = chron_association),
+             shape = 21,
+             alpha = 0.75) +
+  labs(x = "Mean Temperature (°C)",
+       y = "Mean Precipitation (mm)") +
+  scale_x_continuous(limits = c(-7, 10),
+                     breaks = seq(-6, 10, 2)) +
+  scale_y_continuous(limits = c(400, 2500)) +
+  scale_colour_manual(values = c("grey30", "black", "dodgerblue2")) +
+  scale_fill_manual(values = c("grey30", "black", "dodgerblue2")) +
+  annotate("text", x = 8, y = 2500, 
+           colour = "dodgerblue2", hjust = 0, vjust = 0.4,
+           label = "Pulse 1") +
+  annotate("text", x = 8, y = 2375,
+           colour = "black", hjust = 0, vjust = 0.4,
+           label = "Pulse 2") +
+  annotate("text", x = 8, y = 2250,
+           colour = "grey30", hjust = 0, vjust = 0.4,
+           label = "Uncertain") +
+  annotate("point", x = 7.7, y = 2500, 
+           colour = "dodgerblue2") +
+  annotate("point", x = 7.7, y = 2375,
+           colour = "black") +
+  annotate("point", x = 7.7, y = 2250,
+           colour = "grey30") +
+  theme_cowplot(14) +
+  theme(legend.position = "none")
+save_plot("figures/temp_vs_precip.png",
+          temp_vs_precip_plot,
+          base_aspect_ratio = 1.6,
+          base_height = 4)
+
+# plot the two pusles
+temp_vs_precip_plot_by_pulse <- ggplot() +  
+  geom_point(data = random_sample,
+             aes(x = mean_temp_pulse_1,
+                 y = mean_precip_pulse_1),
              colour = "lightskyblue2",
              fill = "lightskyblue2",
              alpha = 0.25,
              shape = 21
              ) +
   geom_point(data = random_sample,
-             aes(x = mean_temp_havelte,
-                 y = mean_precip_havelte),
+             aes(x = mean_temp_pulse_2,
+                 y = mean_precip_pulse_2),
              colour = "grey",
              fill = "grey",
              alpha = 0.25,
              shape = 21
              ) +
   geom_point(data = hamburgian_sites,
-             aes(x = mean_temp_classic,
-                 y = mean_precip_classic),
+             aes(x = mean_temp_pulse_1,
+                 y = mean_precip_pulse_1),
              colour = "dodgerblue2",
              shape = 16
              ) +
   geom_point(data = hamburgian_sites,
-             aes(x = mean_temp_havelte,
-                 y = mean_precip_havelte),
+             aes(x = mean_temp_pulse_2,
+                 y = mean_precip_pulse_2),
              colour = "black",
              shape = 16
              ) +
   labs(x = "Mean Temperature (°C)",
        y = "Mean Precipitation (mm)") +
-  scale_x_continuous(limits = c(-7, 12),
-                     breaks = seq(-6, 12, 2)) +
+  scale_x_continuous(limits = c(-7, 14),
+                     breaks = seq(-6, 14, 2)) +
   scale_y_continuous(limits = c(400, 2500)) +
-  annotate("text", x = 7, y = 2500, 
+  annotate("text", x = 12, y = 2500, 
            colour = "dodgerblue2", hjust = 0, vjust = 0.4,
-           label = "Classic Hamburgian") +
-  annotate("text", x = 7, y = 2400,
+           label = "Pulse 1") +
+  annotate("text", x = 12, y = 2400,
            colour = "black", hjust = 0, vjust = 0.4,
-           label = "Havelte Group") +
-  annotate("point", x = 6.7, y = 2500, 
+           label = "Pulse 2") +
+  annotate("point", x = 11.7, y = 2500, 
            colour = "dodgerblue2") +
-  annotate("point", x = 6.7, y = 2400,
+  annotate("point", x = 11.7, y = 2400,
            colour = "black") +
   theme_cowplot(14) 
-save_plot("figures/temp_vs_precip.png",
-          temp_vs_precip_plot,
+save_plot("figures/temp_vs_precip_by_pulse.png",
+          temp_vs_precip_plot_by_pulse,
           base_aspect_ratio = 1.6,
           base_height = 4)
 
@@ -1025,35 +832,35 @@ hamburgian_sites <- raster::extract(hamburgian_mean_temp,
                 as_Spatial(hamburgian_sites),
                 cellnumbers = T,
                 df = T) %>% 
-  mutate(Site = hamburgian_sites$Site,
+  mutate(site = hamburgian_sites$site,
          cell_id = cells) %>%
-  select(Site, cell_id) %>%
+  select(site, cell_id) %>%
   full_join(hamburgian_sites, .)
 
 # Gather temperature and precip columns into training data
 bioclim_training_all <- hamburgian_sites %>%
   st_drop_geometry() %>%
-  filter(Classic.Hamburgian.Havelte.Group != "Possibly Hamburgian") %>%
-  select(Site, 
-         Latitude,
-         Longitude,
+  filter(chron_association != "uncertain") %>%
+  select(site, 
+         lat,
+         long,
          cell_id,
-         mean_temp_classic,
-         mean_temp_havelte) %>%
-  gather("temp_var", "mean_temp", mean_temp_classic, mean_temp_havelte) %>%
+         mean_temp_pulse_1,
+         mean_temp_pulse_2) %>%
+  gather("temp_var", "mean_temp", mean_temp_pulse_1, mean_temp_pulse_2) %>%
   na.omit() %>%
   distinct(cell_id, temp_var, mean_temp) %>%
   mutate(period = gsub("mean_temp_(.*)", "\\1", temp_var))
 bioclim_training_all <- hamburgian_sites %>%
   st_drop_geometry() %>%
-  filter(Classic.Hamburgian.Havelte.Group != "Possibly Hamburgian") %>%
-  select(Site, 
-         Latitude,
-         Longitude,
+  filter(chron_association != "uncertain") %>%
+  select(site, 
+         lat,
+         long,
          cell_id,
-         mean_precip_classic,
-         mean_precip_havelte) %>%
-  gather("precip_var", "mean_precip", mean_precip_classic, mean_precip_havelte) %>%
+         mean_precip_pulse_1,
+         mean_precip_pulse_2) %>%
+  gather("precip_var", "mean_precip", mean_precip_pulse_1, mean_precip_pulse_2) %>%
   na.omit() %>%
   distinct(cell_id, precip_var, mean_precip) %>%
   mutate(period = gsub("mean_precip_(.*)", "\\1", precip_var)) %>%
@@ -1061,40 +868,47 @@ bioclim_training_all <- hamburgian_sites %>%
 
 # Quality control
 view(bioclim_training_all)
+# bioclim_training_all <- filter(bioclim_training_all, period == "pulse_2")
 
 # Retain climate columns only
 bioclim_training <- select(bioclim_training_all, "mean_temp", "mean_precip")
 
-# Split into training and validation data
-set.seed(0)
-sample_rows <- sample(1:nrow(bioclim_training),
-                      floor(nrow(bioclim_training) / 3)) %>%
-  sort()
-bioclim_validation <- bioclim_training[sample_rows,]
-bioclim_training <- bioclim_training[-sample_rows,]
-
-# Fit Bioclim envlope model to training data
-bioclim_model <- bioclim(bioclim_training)
+# repeat for mean values
+bioclim_training_mean  <- hamburgian_sites %>%
+  st_drop_geometry() %>%
+  filter(chron_association != "uncertain") %>%
+  select(site, 
+         lat,
+         long,
+         cell_id,
+         mean_temp,
+         mean_precip) %>%
+  distinct(cell_id, mean_temp, mean_precip) %>%
+  select(-cell_id)
 
 # Prepare raster stacks for predictions
-climate_classic_ham <- stack(hamburgian_mean_temp_classic_ham,
-                             hamburgian_mean_precip_classic_ham)
-climate_classic_ham <- setNames(climate_classic_ham, 
+climate_mean <-  stack(hamburgian_mean_temp,
+                       hamburgian_mean_precip)
+climate_mean <- setNames(climate_mean, 
+                            c("mean_temp", "mean_precip"))
+climate_pulse_1 <- stack(hamburgian_mean_temp_pulse_1,
+                             hamburgian_mean_precip_pulse_1)
+climate_pulse_1 <- setNames(climate_pulse_1, 
                                 c("mean_temp", "mean_precip"))
-climate_havelte_grp <- stack(hamburgian_mean_temp_havelte_grp,
-                             hamburgian_mean_precip_havelte_grp)
-climate_havelte_grp <- setNames(climate_havelte_grp,
+climate_pulse_2 <- stack(hamburgian_mean_temp_pulse_2,
+                             hamburgian_mean_precip_pulse_2)
+climate_pulse_2 <- setNames(climate_pulse_2,
                                 c("mean_temp", "mean_precip"))
 
 # Mask out everything but land
-climate_classic_ham_masked <- mask(climate_classic_ham,
+climate_pulse_1_masked <- mask(climate_pulse_1,
                                    land_for_maps)
-climate_havelte_grp_masked <- mask(climate_havelte_grp,
+climate_pulse_2_masked <- mask(climate_pulse_2,
                                    land_for_maps)
 
 # Generate random background points for evaluation (absence data)
 set.seed(50)
-absence_data <- randomPoints(climate_classic_ham_masked,
+absence_data <- randomPoints(climate_pulse_1_masked,
                              200)
 colnames(absence_data) <- c('lon', 'lat')
 absence_data <- as.data.frame(absence_data)
@@ -1102,8 +916,8 @@ absence_data <- as.data.frame(absence_data)
 # Add cell_ids
 absence_data$cell_id <- st_as_sf(absence_data,
                                  coords = c("lon", "lat"),
-                                 crs = st_crs(climate_classic_ham)) %>%
-  raster::extract(climate_classic_ham,
+                                 crs = st_crs(climate_pulse_1)) %>%
+  raster::extract(climate_pulse_1,
                   .,
                   df = T,
                   cellnumbers = T) %>% 
@@ -1114,374 +928,236 @@ absence_data <- absence_data[!(absence_data$cell_id %in% bioclim_training_all$ce
 
 # fill in absence data, half from classic, half from halvelte
 absence_data$mean_temp[1:floor(nrow(absence_data)/2)] <- raster::extract(
-  climate_classic_ham[["mean_temp"]], absence_data$cell_id[1:floor(nrow(absence_data)/2)])
+  climate_pulse_1[["mean_temp"]], absence_data$cell_id[1:floor(nrow(absence_data)/2)])
 absence_data$mean_precip[1:floor(nrow(absence_data)/2)] <- raster::extract(
-  climate_classic_ham[["mean_precip"]], absence_data$cell_id[1:floor(nrow(absence_data)/2)])
+  climate_pulse_1[["mean_precip"]], absence_data$cell_id[1:floor(nrow(absence_data)/2)])
 
 absence_data$mean_temp[(floor(nrow(absence_data)/2)+1):nrow(absence_data)] <- raster::extract(
-  climate_havelte_grp[["mean_temp"]], absence_data$cell_id[(floor(nrow(absence_data)/2)+1):nrow(absence_data)])
+  climate_pulse_2[["mean_temp"]], absence_data$cell_id[(floor(nrow(absence_data)/2)+1):nrow(absence_data)])
 absence_data$mean_precip[(floor(nrow(absence_data)/2)+1):nrow(absence_data)] <- raster::extract(
-  climate_havelte_grp[["mean_precip"]], absence_data$cell_id[(floor(nrow(absence_data)/2)+1):nrow(absence_data)])
+  climate_pulse_2[["mean_precip"]], absence_data$cell_id[(floor(nrow(absence_data)/2)+1):nrow(absence_data)])
 
+# Ten-fold cross validation
+set.seed(7)
+# Group training data
+bioclim_training_mean$group <- kfold(nrow(bioclim_training_mean), 5)
+# Prepare output lists
+bioclim_models <- list()
+bioclim_evals <- list()
+bioclim_threshs <- list() 
 
-# Evaluate model
-bioclim_eval <- evaluate(bioclim_training,
-                         absence_data[,c("mean_temp", "mean_precip")],
+# Carry out cross validation
+for(i in 1:5){
+  # Fit Bioclim envlope model to training data
+  bioclim_models[i] <- bioclim(bioclim_training_mean[bioclim_training_mean$group != i, 1:2])
+
+  # Evaluate model
+  bioclim_evals[i] <- evaluate(p = bioclim_training_mean[bioclim_training_mean$group == i, 1:2],
+                           a = absence_data[,4:5],
+                           model = bioclim_models[[i]])
+  # Determine threshold
+  bioclim_threshs[i] <- threshold(bioclim_evals[[i]], 'spec_sens')
+}
+mean(unlist(lapply(bioclim_evals, function(x) x@auc))) 
+
+# fit single model 
+bioclim_model <- bioclim(bioclim_training_mean[,1:2])
+bioclim_eval <- evaluate(bioclim_training_mean[,1:2],
+                         absence_data[,4:5],
                          bioclim_model)
-# Determine threshold
-bioclim_thresh <- threshold(bioclim_eval, 'spec_sens') 
+bioclim_thresh <-  threshold(bioclim_eval, 'spec_sens')
 
 # Predict for both time periods
-predictions_classic_ham <- predict(climate_classic_ham,
+predictions_mean <- predict(climate_mean,
+                            bioclim_model)
+predictions_pulse_1 <- predict(climate_pulse_1,
                                    bioclim_model) 
-predictions_havelte_grp <- predict(climate_havelte_grp, 
+predictions_pulse_2 <- predict(climate_pulse_2, 
                                    bioclim_model)
 
 # Apply threshold
-predictions_classic_ham_thresh <- predictions_classic_ham > bioclim_thresh
-predictions_havelte_grp_thresh <- predictions_havelte_grp > bioclim_thresh
+predictions_mean_thresh <- predictions_mean > bioclim_thresh
+predictions_pulse_1_thresh <- predictions_pulse_1 > bioclim_thresh
+predictions_pulse_2_thresh <- predictions_pulse_2 > bioclim_thresh
 
 # Visualise predictions
 
-# |_ Maps Classic Ham ----
+# Define function to visualise predictions
+plot_preds_map <- function(base_raster,
+                           main_title,
+                           file_name,
+                           palette = "default" ) {
+  if(palette[1] == "default"){
+    palette <- sequential_hcl(
+      100, 
+      "Inferno")
+  }
+  png(file_name, 
+      width = 6,
+      height = 3,
+      units = "in",
+      res = 300)
+  print(levelplot(base_raster, 
+                  margin = F,
+                  main = main_title,
+                  colorkey = F,
+                  par.settings = rasterTheme(
+                    region = palette)) +
+          latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
+          latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
+          latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
+          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
+                                        col = "grey90", pch = 63, cex = 0.8)) +
+          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
+                                        col = "dodgerblue2", pch = 1, cex = 1.05)) +
+          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
+                                        col = "black", pch = 3)) +
+          
+          latticeExtra::layer({
+            centre_x <- 27.5
+            centre_y <- 58.3
+            grid.rect(x=centre_x, y=centre_y,
+                      width=7.5, height=2.5,
+                      gp=gpar(fill="white",
+                              col = "black",
+                              alpha = 0.9),
+                      default.units='native')
+            
+            
+            grid.points(#label = "Pulse 1",
+              x=centre_x-2.75, y=centre_y+2.5/4,
+              pch = 1,
+              gp=gpar(cex = 0.65,
+                      col = "dodgerblue2"),
+              default.units='native')
+            grid.points(#label = "Pulse 2",
+              x=centre_x-2.75, y=centre_y,
+              pch = 3,
+              gp=gpar(cex = 0.4,
+                      col = "black"),
+              default.units='native')
+            grid.points(#label = "Uncertain",
+              x=centre_x-2.75, y=centre_y-2.5/4,
+              pch = 63,
+              gp=gpar(cex = 0.65,
+                      col = "grey30"),
+              default.units='native')
+            
+            grid.text(label = "Pulse 1",
+                      x=centre_x-1.75, y=centre_y+2.5/4,
+                      #just = "left",
+                      hjust = 0,
+                      vjust = 0.4,
+                      gp=gpar(cex=0.5,
+                              col = "black"),
+                      default.units='native')
+            grid.text(label = "Pusle 2",
+                      x=centre_x-1.75, y=centre_y,
+                      #just = "left",
+                      hjust = 0,
+                      vjust = 0.4,
+                      gp=gpar(cex=0.5,
+                              col = "black"),
+                      default.units='native')
+            grid.text(label = "Uncertain",
+                      x=centre_x-1.75, y=centre_y-2.5/4,
+                      #just = "left",
+                      hjust = 0,
+                      vjust = 0.4,
+                      gp=gpar(cex=0.5,
+                              col = "black"),
+                      default.units='native')
+          }))
+  dev.off()
+  return("Done")
+}
 
-png("figures/predictions_classic_ham.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(predictions_classic_ham, 
-          margin = F,
-          main = "Raw Predictions 14.5k-14.1k BP ",
-          colorkey = F,
-          par.settings = rasterTheme(
-            region = sequential_hcl(
-              100, 
-              "Inferno"))) +
-  latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
-  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
-  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Classic Hamburgian",],
-                                col = "dodgerblue2", pch = 1, cex = 1.05)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Havelte Group",],
-                                col = "white", pch = 3)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Possibly Hamburgian",],
-                                col = "gray90", pch = 63, cex = 1.05)) +
-  latticeExtra::layer({
-    centre_x <- 25.5
-    centre_y <- 51.5
-    grid.rect(x=centre_x, y=centre_y,
-              width=7.5, height=2.5,
-              gp=gpar(fill="white", 
-                      col = "black",
-                      alpha = 0.75),
-              default.units='native')
-    
-    grid.points(#label = "Hamburgian",
-      x=centre_x-2.75, y=centre_y+2.5/4,
-      pch = 1,
-      gp=gpar(cex = 0.65, 
-              col = "dodgerblue2"),
-      default.units='native')
-    grid.points(#label = "Havelte Group",
-      x=centre_x-2.75, y=centre_y,
-      pch = 3,
-      gp=gpar(cex = 0.4, 
-              col = "white"),
-      default.units='native')
-    grid.points(#label = "Possibly Ham.",
-      x=centre_x-2.75, y=centre_y-2.5/4,
-      pch = 63,
-      gp=gpar(cex = 0.65, 
-              col = "grey30"),
-      default.units='native')
-    
-    grid.text(label = "Hamburgian",
-              x=centre_x-1.75, y=centre_y+2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Havelte Group",
-              x=centre_x-1.75, y=centre_y,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Possibly Ham.",
-              x=centre_x-1.75, y=centre_y-2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-  })
-dev.off()
+# |_ Mean ----
+plot_preds_map(base_raster = predictions_mean,
+               main = "Raw Predictions 15.0k-13.8k BP ", 
+               file_name = "figures/predictions_mean1.png")
+plot_preds_map(base_raster = predictions_mean_thresh,
+               main = "Presence/Absence Predictions 15.0k-13.8k BP ", 
+               file_name = "figures/predictions_mean_thresh.png",
+               palette = c("grey30", "#f38f32"))
+
+# |_ Pulse 1----
+plot_preds_map(base_raster = predictions_pulse_1,
+               main = "Raw Predictions 14.5k-14.3k BP ", 
+               file_name = "figures/predictions_pulse_1.png")
+plot_preds_map(base_raster = predictions_pulse_1_thresh,
+               main = "Presence/Absence  Predictions 14.5k-14.3k BP ", 
+               file_name = "figures/predictions_pulse_1_thresh.png",
+               palette = c("grey30", "#f38f32"))
+
+# |_ Pulse 2 ----
+plot_preds_map(base_raster = predictions_pulse_2,
+               main = "Raw Predictions 14.2k-14.1k BP ", 
+               file_name = "figures/predictions_pulse_2.png")
+plot_preds_map(base_raster = predictions_pulse_2_thresh,
+               main = "Presence/Absence  Predictions 14.2k-14.1k BP ", 
+               file_name = "figures/predictions_pulse_2_thresh.png",
+               palette = c("grey30", "#f38f32"))
+
+# |_ Predictions Time-Series ----
+
+# Set range
+time_range <- seq(time_range_bp$max_cent, time_range_bp$min_cent, 1)
+
+# Crop and stack rasters
+time_series_climate <- lapply(time_range, function(cent_bce){
+  cat(paste0(cent_bce, " ... \n"))
+  temp_raster_name <- paste0("temp_", cent_bce, "_BCE")
+  precip_raster_name <- paste0("precip_", cent_bce, "_BCE")
+  climate_bce <- stack(crop(temp[[temp_raster_name]],area_of_interest),
+                       crop(precip[[precip_raster_name]], area_of_interest))
+}) %>% setNames(time_range)
+
+# Calculate predictions
+preds_time_series <- lapply(time_series_climate, function(climate_raster){
+  cat(paste0(names(climate_raster), " ... \n"))
+  
+  # update climate raster names to match model
+  climate_raster <- setNames(climate_raster, c("mean_temp", "mean_precip"))
+  # Predict for both time periods
+  predictions <- predict(climate_raster,
+                                 bioclim_model)
+  # Apply threshold
+  predictions <- predictions > bioclim_thresh
+  
+  return(predictions)
+}) %>% setNames(time_range)
+
+# Generate Plots
+lapply(seq_along(time_range), function(index){
+  k_year_bp <- time_range[index] / 10 + 2
+  cat(paste0(k_year_bp, "k BP...\n"))
+  plot_preds_map(base_raster = preds_time_series[[index]],
+                 main = paste0("Predictions ", formatC(k_year_bp, 1, format = "f"), "k BP"), 
+                 file_name = paste0("figures/preds_time-series/predictions_", 
+                                    formatC(k_year_bp, 1, format = "f"), "k_BP.png"),
+                 palette = c("grey30", "#f38f32"))
+  return("Done")
+})
+
+# |_ Generate Animation ----
+library("magick")
+# List files and loade as images
+imgs <- list.files("figures/preds_time-series/", 
+                   pattern = ".png", full.names = TRUE)
+img_list <- lapply(rev(imgs), image_read)
+
+# join images 
+img_joined <- image_join(img_list)
+
+# animate at 1 frame per second
+img_animated <- image_animate(img_joined, fps = 0.5)
+
+# Export as gif
+image_write(image = img_animated,
+            path = "figures/preds_time-series/preds_time_series.gif")
 
 
-png("figures/predictions_classic_ham_thresh.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(predictions_classic_ham_thresh, 
-          margin = F,
-          main = "Presence/Absence Predictions 14.5k-14.1k BP ",
-          colorkey = F,
-          par.settings = rasterTheme(
-            region = sequential_hcl(
-              5, 
-              "Inferno")[c(1,3)])) +
-  latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
-  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
-  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Classic Hamburgian",],
-                                col = "dodgerblue2", pch = 1, cex = 1.05)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Havelte Group",],
-                                col = "white", pch = 3)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Possibly Hamburgian",],
-                                col = "gray90", pch = 63, cex = 1.05)) +
-  latticeExtra::layer({
-    centre_x <- 25.5
-    centre_y <- 51.5
-    grid.rect(x=centre_x, y=centre_y,
-              width=7.5, height=2.5,
-              gp=gpar(fill="white", 
-                      col = "black",
-                      alpha = 0.75),
-              default.units='native')
-    
-    grid.points(#label = "Hamburgian",
-      x=centre_x-2.75, y=centre_y+2.5/4,
-      pch = 1,
-      gp=gpar(cex = 0.65, 
-              col = "dodgerblue2"),
-      default.units='native')
-    grid.points(#label = "Havelte Group",
-      x=centre_x-2.75, y=centre_y,
-      pch = 3,
-      gp=gpar(cex = 0.4, 
-              col = "white"),
-      default.units='native')
-    grid.points(#label = "Possibly Ham.",
-      x=centre_x-2.75, y=centre_y-2.5/4,
-      pch = 63,
-      gp=gpar(cex = 0.65, 
-              col = "grey30"),
-      default.units='native')
-    
-    grid.text(label = "Hamburgian",
-              x=centre_x-1.75, y=centre_y+2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Havelte Group",
-              x=centre_x-1.75, y=centre_y,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Possibly Ham.",
-              x=centre_x-1.75, y=centre_y-2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-  })
-dev.off()
-
-# |_ Maps Havelte Group ----
-
-png("figures/predictions_havelte_grp.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(predictions_havelte_grp, 
-          margin = F,
-          main = "Raw Predictions 14.7k-14.5k BP",
-          colorkey = F,
-          par.settings = rasterTheme(
-            region = sequential_hcl(
-              100, 
-              "Inferno"))) +
-  latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
-  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
-  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Classic Hamburgian",],
-                                col = "dodgerblue2", pch = 1, cex = 1.05)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Havelte Group",],
-                                col = "white", pch = 3)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Possibly Hamburgian",],
-                                col = "gray90", pch = 63, cex = 1.05)) +
-  latticeExtra::layer({
-    centre_x <- 25.5
-    centre_y <- 51.5
-    grid.rect(x=centre_x, y=centre_y,
-              width=7.5, height=2.5,
-              gp=gpar(fill="white", 
-                      col = "black",
-                      alpha = 0.75),
-              default.units='native')
-    
-    grid.points(#label = "Hamburgian",
-      x=centre_x-2.75, y=centre_y+2.5/4,
-      pch = 1,
-      gp=gpar(cex = 0.65, 
-              col = "dodgerblue2"),
-      default.units='native')
-    grid.points(#label = "Havelte Group",
-      x=centre_x-2.75, y=centre_y,
-      pch = 3,
-      gp=gpar(cex = 0.4, 
-              col = "white"),
-      default.units='native')
-    grid.points(#label = "Possibly Ham.",
-      x=centre_x-2.75, y=centre_y-2.5/4,
-      pch = 63,
-      gp=gpar(cex = 0.65, 
-              col = "grey30"),
-      default.units='native')
-    
-    grid.text(label = "Hamburgian",
-              x=centre_x-1.75, y=centre_y+2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Havelte Group",
-              x=centre_x-1.75, y=centre_y,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Possibly Ham.",
-              x=centre_x-1.75, y=centre_y-2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-  })
-dev.off()
-
-png("figures/predictions_havelte_grp_thresh.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(predictions_havelte_grp_thresh, 
-          margin = F,
-          main = "Presence/Absence Predictions 14.7k-14.5k BP",
-          colorkey = F,
-          par.settings = rasterTheme(
-            region = sequential_hcl(
-              5, 
-              "Inferno")[c(1,3)])) +
-  latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
-  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
-  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Classic Hamburgian",],
-                                col = "dodgerblue2", pch = 1, cex = 1.05)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Havelte Group",],
-                                col = "white", pch = 3)) +
-  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$Classic.Hamburgian.Havelte.Group == "Possibly Hamburgian",],
-                                col = "gray90", pch = 63, cex = 1.05)) +
-  latticeExtra::layer({
-    centre_x <- 25.5
-    centre_y <- 51.5
-    grid.rect(x=centre_x, y=centre_y,
-              width=7.5, height=2.5,
-              gp=gpar(fill="white", 
-                      col = "black",
-                      alpha = 0.75),
-              default.units='native')
-    
-    grid.points(#label = "Hamburgian",
-      x=centre_x-2.75, y=centre_y+2.5/4,
-      pch = 1,
-      gp=gpar(cex = 0.65, 
-              col = "dodgerblue2"),
-      default.units='native')
-    grid.points(#label = "Havelte Group",
-      x=centre_x-2.75, y=centre_y,
-      pch = 3,
-      gp=gpar(cex = 0.4, 
-              col = "white"),
-      default.units='native')
-    grid.points(#label = "Possibly Ham.",
-      x=centre_x-2.75, y=centre_y-2.5/4,
-      pch = 63,
-      gp=gpar(cex = 0.65, 
-              col = "grey30"),
-      default.units='native')
-    
-    grid.text(label = "Hamburgian",
-              x=centre_x-1.75, y=centre_y+2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Havelte Group",
-              x=centre_x-1.75, y=centre_y,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-    grid.text(label = "Possibly Ham.",
-              x=centre_x-1.75, y=centre_y-2.5/4,
-              #just = "left",
-              hjust = 0,
-              vjust = 0.4,
-              gp=gpar(cex=0.5, 
-                      col = "black"),
-              default.units='native')
-  })
-dev.off()
-
-levelplot(predictions_classic_ham_thresh, margins = F)
-levelplot(predictions_havelte_grp, margins = F)
-levelplot(predictions_havelte_grp_thresh, margins = F)
-plot(climate_classic_ham[[1]])
-points(absence_data)
-points(rbind(bioclim_training, bioclim_validation))
-preds <- predict(stack(hamburgian_mean_temp, hamburgian_mean_precip),
-            bioclim_envelope_model)
-predictions_classic_ham+ 
-  layer(sp.points(as_Spatial(hamburgian_sites), col = "white")) +
-  layer(sp.polygons(countries, col = "darkgrey", ))
-png("figures/bioclim_env_mean_raw_preds.png", 
-    width = 6,
-    height = 3,
-    units = "in",
-    res = 300)
-levelplot(preds, 
-          margin = F,
-          main = "BIOCLIM Envelope Raw Predictions") +
-  layer(sp.points(as_Spatial(hamburgian_sites), col = "white")) +
-  layer(sp.polygons(countries, col = "darkgrey", ))
-dev.off()
 
 # GEOFACETS playground (experimental) ----
 
