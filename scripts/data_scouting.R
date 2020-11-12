@@ -2,6 +2,7 @@
 # Jakob Assmann j.assmann@bios.au.dk 17 August 2020
 
 ## 1) Housekeeping ----
+# |_ Load data ----
 # Dependencies
 library(sf)
 library(raster)
@@ -12,6 +13,7 @@ library(colorspace)
 library(rnaturalearth)
 library(rnaturalearthdata)
 library(dismo)
+library(magick)
 
 rasterOptions(progress = "text")
 
@@ -96,26 +98,8 @@ hamburgian_sites <- st_as_sf(hamburgian_sites,
                              coords = c("long", "lat"),
                              crs = 4326,
                              remove = F)
-# # Make time ranges interpretable
-# hamburgian_sites$CalBP.Pulses_begin <- as.numeric(
-#   gsub("^([0-9]*\\.[0-9]*) -.*", 
-#        "\\1", 
-#        
-#        hamburgian_sites$CalBP.Pulses)) * 1000
-# hamburgian_sites$CalBP.Pulses_end <- as.numeric(
-#   gsub(".* - ([0-9]*\\.[0-9]*$)",
-#        "\\1", 
-#        
-#        hamburgian_sites$CalBP.Pulses))* 1000
-# hamburgian_sites$CalBP.Broad_begin <- as.numeric(
-#   gsub("^([0-9]*\\.[0-9]*) -.*", 
-#        "\\1", 
-#        hamburgian_sites$CalBP.Broad))* 1000
-# hamburgian_sites$CalBP.Broad_end <- as.numeric(
-#   gsub(".* - ([0-9]*\\.[0-9]*$)", 
-#        "\\1", 
-#        hamburgian_sites$CalBP.Broad)) * 1000
 
+# |_ Extract climate variables ----
 # Extract data from layers
 temp_df <- as.data.frame(raster::extract(temp, 
                                          as_Spatial(hamburgian_sites)))
@@ -147,35 +131,35 @@ save(precip_df, file = "data/precip_df.Rda")
 load("data/temp_df.Rda")
 load("data/precip_df.Rda")
 
-## 2) Time-series Plots ----
-# Calculate key stats
+## 2) Climate Variables ----
+# |_ Prep Data ----
 
 # Mean temp / precip in the two Hamburgian Culture periods
 mean_temp <- temp_df %>% 
   group_by(site) %>%
-  filter(year_BP >= 13800 & year_BP <= 15000) %>%
+  filter(year_BP >= 14100 & year_BP < 14500) %>%
   summarise(mean_temp = mean(temp))
 mean_temp_pulse_1 <- temp_df %>% 
   group_by(site) %>%
-  filter(year_BP >= 14300 & year_BP <= 14500) %>%
+  filter(year_BP >= 14300 & year_BP < 14500) %>%
   summarise(mean_temp_pulse_1 = mean(temp))
 mean_temp_pulse_2 <- temp_df %>% 
   group_by(site) %>%
-  filter(year_BP >= 14100 & year_BP <= 14200) %>%
+  filter(year_BP >= 14100 & year_BP < 14200) %>%
   summarise(mean_temp_pulse_2 = mean(temp))
 
 
 mean_precip <- precip_df %>% 
   group_by(site) %>%
-  filter(year_BP >= 13800 & year_BP <= 15000) %>%
+  filter(year_BP >= 14100 & year_BP < 14500) %>%
   summarise(mean_precip = mean(precip))
 mean_precip_pulse_1 <- precip_df %>% 
   group_by(site) %>%
-  filter(year_BP >= 14300 & year_BP <= 14500) %>%
+  filter(year_BP >= 14300 & year_BP < 14500) %>%
   summarise(mean_precip_pulse_1 = mean(precip))
 mean_precip_pulse_2 <- precip_df %>% 
   group_by(site) %>%
-  filter(year_BP >= 14100 & year_BP <= 14200) %>%
+  filter(year_BP >= 14100 & year_BP < 14200) %>%
   summarise(mean_precip_pulse_2 = mean(precip))
 
 # merge with hamburgian_sites df
@@ -214,26 +198,252 @@ hamburgian_sites <- hamburgian_sites %>% filter(arch_association != "creswellian
 hamburgian_sites <- hamburgian_sites %>%
   mutate(site = ordered(site, levels = levels(fct_reorder(hamburgian_sites$site, hamburgian_sites$lat))))
 
+# |_ Histograms ----
+variables_to_plot <- c("mean_temp", 
+                       "mean_temp_pulse_1",
+                       "mean_temp_pulse_2",
+                       "mean_precip",
+                       "mean_precip_pulse_1",
+                       "mean_precip_pulse_2")
+x_titles <-  c("All Sites\nMean Temp 14.5k-14.1k BP (°C)", 
+               "Pulse 1\nMean Temp 14.5k-14.3k BP (°C)",
+               "Pulse 2\nMean Temp 14.2k-14.1k BP (°C)",
+               "All Sites\nMean Precip 14.5k-14.1k BP (mm)",
+               "Pulse 1\nMean Precip 14.5k-14.3k BP (mm)",
+               "Pulse 2\nMean Precip 14.2k-14.1k BP (mm)")
+colours <- c(rep(c("grey30",
+                   "dodgerblue2",
+                   "black"),
+                 2))
+histogram_plots <- lapply(
+  seq_along(variables_to_plot),
+  function(index){
+    is_temp <- str_detect(variables_to_plot[index], "temp")
+    if(is_temp){ 
+      x_limits <- c(-3,6)
+      x_step <- c(0.5)
+    } else{
+      x_limits <- c(500,1000)
+      x_step <- c(50)
+    }
+    ggplot(hamburgian_sites) +
+      geom_histogram(aes_string(variables_to_plot[index]), 
+                     breaks = seq(x_limits[1], x_limits[2], x_step),
+                     fill = colours[index]) +
+      scale_y_continuous(limits = c(0,85)) +
+      labs(x = x_titles[index], y = "Number of Sites") +
+      theme_cowplot(12)
+  })
+save_plot("figures/climate_histograms.png", 
+          plot_grid(plotlist = histogram_plots,
+                    labels = "auto"),
+          base_height = 6)
+
+# |_ Summary Statistics ----
+
+summary_stats <- hamburgian_sites %>%
+  st_drop_geometry() %>%
+  summarise(n_sites = sum(!is.na(mean_temp)),
+            mean = mean(mean_temp, na.rm = T),
+            min = min(mean_temp, na.rm = T),
+            max = max(mean_temp, na.rm = T)) %>% 
+  t()
+summary_stats <- hamburgian_sites %>%
+  st_drop_geometry() %>%
+  summarise(n_sites = sum(!is.na(mean_temp_pulse_1)),
+            mean = mean(mean_temp_pulse_1, na.rm = T),
+            min = min(mean_temp_pulse_1, na.rm = T),
+            max = max(mean_temp_pulse_1, na.rm = T)) %>% 
+  t() %>%
+  cbind(summary_stats, .)
+summary_stats <- hamburgian_sites %>%
+  st_drop_geometry() %>%
+  summarise(n_sites = sum(!is.na(mean_temp_pulse_2)),
+            mean = mean(mean_temp_pulse_2, na.rm = T),
+            min = min(mean_temp_pulse_2, na.rm = T),
+            max = max(mean_temp_pulse_2, na.rm = T)) %>% 
+  t() %>%
+  cbind(summary_stats, .)
+summary_stats <- hamburgian_sites %>%
+  st_drop_geometry() %>%
+  summarise(n_sites = sum(!is.na(mean_precip)),
+            mean = mean(mean_precip, na.rm = T),
+            min = min(mean_precip, na.rm = T),
+            max = max(mean_precip, na.rm = T)) %>% 
+  t() %>%
+  cbind(summary_stats, .)
+summary_stats <- hamburgian_sites %>%
+  st_drop_geometry() %>%
+  summarise(n_sites = sum(!is.na(mean_precip_pulse_1)),
+            mean = mean(mean_precip_pulse_1, na.rm = T),
+            min = min(mean_precip_pulse_1, na.rm = T),
+            max = max(mean_precip_pulse_1, na.rm = T)) %>% 
+  t() %>%
+  cbind(summary_stats, .)
+summary_stats <- hamburgian_sites %>%
+  st_drop_geometry() %>%
+  summarise(n_sites = sum(!is.na(mean_precip_pulse_2)),
+            mean = mean(mean_precip_pulse_2, na.rm = T),
+            min = min(mean_precip_pulse_2, na.rm = T),
+            max = max(mean_precip_pulse_2, na.rm = T)) %>% 
+  t() %>%
+  cbind(summary_stats, .) %>% 
+  as.data.frame() %>%
+  setNames(., c("temp_all", "temp_pulse_1", "temp_pulse_2", 
+                "precip_all", "precip_pulse_1", "precip_pulse_2"))
+summary_stats[1,] <- apply(summary_stats[1,],
+                           2,
+                           function(x) formatC(x, digits = 0, format = "f"))
+summary_stats[2:4,] <- apply(summary_stats[2:4,],
+                             2,
+                             function(x) formatC(as.numeric(x), digits = 1, format = "f"))
+write_csv(summary_stats, "tables/summary_stats.csv")
+
+# |_ Test differences ----
+# Prepare temperature data
+temp_summary <- hamburgian_sites %>%
+  st_drop_geometry() %>%
+  pivot_longer(c("mean_temp", "mean_temp_pulse_1", "mean_temp_pulse_2"),
+               names_to = "variable",
+               values_to = "temp") %>%
+  select(variable, temp) %>% 
+  na.omit()
+
+# Kruskal wallis test for temperature
+kruskal <- kruskal.test(temp ~ variable, temp_summary)
+kruskal
+# Kruskal-Wallis rank sum test
+# 
+# data:  temp by variable
+# Kruskal-Wallis chi-squared = 106.37, df = 2, p-value < 2.2e-16
+# => The means are significantly different between the periods
+
+# Run post-hoc wilcox test with adjustment for multiple testing
+pw_wilcox <-  pairwise.wilcox.test(temp_summary$temp, temp_summary$variable,
+                                   p.adjust.method = "bonferroni")
+pw_wilcox
+# Pairwise comparisons using Wilcoxon rank sum test 
+# 
+# data:  temp_summary$temp and temp_summary$variable 
+# 
+# mean_temp mean_temp_pulse_1
+# mean_temp_pulse_1 4.1e-15   -                
+#   mean_temp_pulse_2 2.0e-12   2.3e-08          
+# 
+# P value adjustment method: bonferroni 
+
+# Prepare precipitation data
+precip_summary <- hamburgian_sites %>%
+  st_drop_geometry() %>%
+  pivot_longer(c("mean_precip", "mean_precip_pulse_1", "mean_precip_pulse_2"),
+               names_to = "variable",
+               values_to = "precip") %>%
+  select(variable, precip) %>% 
+  na.omit()
+
+# Kruskal wallis test for temperature
+kruskal <- kruskal.test(precip ~ variable, precip_summary)
+kruskal
+# Kruskal-Wallis rank sum test
+# 
+# data:  precip by variable
+# Kruskal-Wallis chi-squared = 8.9768, df = 2, p-value = 0.01124
+# => The means are not significantly different between the periods
+
+# Run post-hoc wilcox test with adjustment for multiple testing
+pw_wilcox <-  pairwise.wilcox.test(precip_summary$precip, precip_summary$variable,
+                                   p.adjust.method = "bonferroni")
+pw_wilcox
+# Pairwise comparisons using Wilcoxon rank sum test 
+# 
+# data:  precip_summary$precip and precip_summary$variable 
+# 
+# mean_precip mean_precip_pulse_1
+# mean_precip_pulse_1 0.0095      -                  
+#   mean_precip_pulse_2 1.0000      0.1193             
+# 
+# P value adjustment method: bonferroni 
+
 # |_ Temp Time-Series Plot ----
-temp_plot <- ggplot(temp_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>%
+temp_plot <- ggplot(temp_df %>% filter(year_BP >= 13000 & year_BP < 15500) %>%
                       filter(site %in% unique(hamburgian_sites$site)) %>%
-                      mutate(site = ordered(site, levels = levels(fct_reorder(hamburgian_sites$site, hamburgian_sites$lat)))),
-       aes(x = year_BP,
+                      full_join(select(mutate(hamburgian_sites, 
+                                              site = as.character(site),
+                                              chron_association = ordered(chron_association,
+                                                                         levels = c("uncertain", "pulse_1", "pulse_2"))), site, chron_association)),
+       aes(x = year_BP + 50,
            y = temp,
-           colour = site)) +
+           group = site)) +
+  annotate("rect", xmin = 14100,
+           xmax = 14500,
+           ymin = -10,
+           ymax = 10,
+           fill = "grey90",
+           colour = "NA",
+           alpha = 1) +
+  annotate("rect", xmin = 14300,
+           xmax = 14500,
+           ymin = -9.5,
+           ymax = 9.5,
+           fill = "dodgerblue2",
+           colour = "NA",
+           alpha = 0.5) +
+  annotate("rect", xmin = 14100,
+           xmax = 14200,
+           ymin = -9.5,
+           ymax = 9.5,
+           fill = "black",
+           colour = "NA",
+           alpha = 0.5) +
+  geom_line(colour = "red3") +
+  labs(x = "Year BP", y = "\nAnnual Mean Temp (°C)")  +
+  scale_x_reverse(limits = c(15500, 13000),
+                  breaks = seq(15500, 13000, -100),
+                  labels = rev(c("13.0k", "","","","", 
+                                 "13.5k",  "","","","", 
+                                 "14.0k",  "","","","", 
+                                 "14.5k",  "","","","", 
+                                 "15.0k",  "","","","", 
+                                 "15.5k"))) +
+  scale_y_continuous(limits = c(-10, 10),
+                     breaks = c(-10,-5,0,5,10)) +
+  theme_cowplot(15) +
+  theme(legend.position = "none",
+        strip.background = element_rect(fill = NA),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+save_plot("figures/figure1_temp.png",
+          temp_plot,
+          base_aspect_ratio = 1.6,
+          base_height = 4)
+
+## Plot per site
+temp_plot_by_site <- ggplot(temp_df %>% filter(year_BP >= 13000 & year_BP < 15500) %>%
+                                 filter(site %in% unique(hamburgian_sites$site)) %>%
+                                 mutate(site = ordered(site, levels = levels(fct_reorder(hamburgian_sites$site, hamburgian_sites$lat)))),
+                               aes(x = year_BP + 50,
+                                   y = temp,
+                                   colour = site)) +
   geom_line() +
   geom_segment(data = hamburgian_sites,
-             mapping = aes(x = pulse_1_end,
-                           xend = pulse_1_start,
-                           y = mean_temp_pulse_1, 
-                           yend = mean_temp_pulse_1),
-             colour = "black") +
+               mapping = aes(x = pulse_1_end,
+                             xend = pulse_1_start,
+                             y = mean_temp_pulse_1, 
+                             yend = mean_temp_pulse_1),
+               colour = "black") +
   geom_segment(data = hamburgian_sites,
-    mapping = aes(x = pulse_2_end,
-                  xend = pulse_2_start,
-                  y = mean_temp_pulse_2, 
-                  yend = mean_temp_pulse_2),
-    colour = "black") +
+               mapping = aes(x = pulse_2_end,
+                             xend = pulse_2_start,
+                             y = mean_temp_pulse_2, 
+                             yend = mean_temp_pulse_2),
+               colour = "black") +
+  labs(x = "Year BP", y = "Annual Mean Temp (°C)") +
+  scale_x_reverse(limits = c(15500, 13000),
+                  breaks = seq(15500, 13000, -500),
+                  labels = rev(c("13.0k", "13.5k", "14.0k", "14.5k", "15.0k", "15.5k"))) +
+  scale_y_continuous(limits = c(-7, 10),
+                     breaks = c(-5,0,5,10)) +
+  scale_colour_discrete_qualitative(palette = "Dark2") + 
   geom_text(data = hamburgian_sites,
             mapping = aes(x = pulse_1_start + 100,
                           y = mean_temp_pulse_1,
@@ -250,51 +460,107 @@ temp_plot <- ggplot(temp_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>%
             vjust = 0.5,
             hjust = 0,
             size = 2) +
-  labs(x = "Year BP", y = "Annual Mean Temp °C (Bio01)") +
-  scale_x_reverse(limits = c(15500, 13000),
-                  breaks = seq(15500, 13000, -500),
-                  labels = rev(c("13.0k", "13.5k", "14.0k", "14.5k", "15.0k", "15.5k"))) +
-  scale_y_continuous(limits = c(-7, 10),
-                     breaks = c(-5,0,5,10)) +
-  scale_colour_discrete_qualitative(palette = "Dark2") +
+  facet_wrap(vars(site),
+             scales = "free") +  
   theme_cowplot(8) +
   theme(legend.position = "none",
         strip.background = element_rect(fill = NA),
-        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
-
-save_plot("figures/figure1_temp.png",
-          temp_plot,
-          base_aspect_ratio = 1.6,
-          base_height = 4)
-
-# Plot per site
-temp_plot <- temp_plot + facet_wrap(vars(site),
-                                    scales = "free") +
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
   theme(axis.title = element_text(face = "bold"))
 save_plot("figures/figure1_temp_by_site.png",
-          temp_plot,
+          temp_plot_by_site,
           base_asp = 1.6,
           base_height = 20)
 
 # |_ Precip Time-Series Plot ----
-precip_plot <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP <= 15500) %>%
+precip_plot <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP < 15500) %>%
                       mutate(site = ordered(site, levels = levels(fct_reorder(hamburgian_sites$site, hamburgian_sites$lat)))),
-                    aes(x = year_BP,
+                    aes(x = year_BP + 50,
                         y = precip,
-                        colour = site)) +
+                        group = site)) +
+  annotate("rect", xmin = 14100,
+           xmax = 14500,
+           ymin = 200,
+           ymax = 1200,
+           fill = "grey90",
+           colour = "NA",
+           alpha = 1) +
+  annotate("rect", xmin = 14300,
+           xmax = 14500,
+           ymin = 225,
+           ymax = 1175,
+           fill = "dodgerblue2",
+           colour = "NA",
+           alpha = 0.5) +
+  annotate("rect", xmin = 14100,
+           xmax = 14200,
+           ymin = 225,
+           ymax = 1175,
+           fill = "black",
+           colour = "NA",
+           alpha = 0.5) +
+  geom_line(colour = "blue") +
+  labs(x = "Year BP", y = "\nAnnual Precipitation (mm)") +
+  scale_x_reverse(limits = c(15500, 13000),
+                  breaks = seq(15500, 13000, -100),
+                  labels = rev(c("13.0k", "","","","", 
+                                 "13.5k",  "","","","", 
+                                 "14.0k",  "","","","", 
+                                 "14.5k",  "","","","", 
+                                 "15.0k",  "","","","", 
+                                 "15.5k"))) +
+  scale_y_continuous(limits = c(200, 1200),
+                     breaks = seq(200,1200,200)) +
+  scale_colour_discrete_qualitative(palette = "Dark2") +
+  theme_cowplot() +
+  theme(legend.position = "none",
+        strip.background = element_rect(fill = NA),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+save_plot("figures/figure1_precip.png",
+          precip_plot,
+          base_aspect_ratio = 1.6,
+          base_height = 4)
+
+# Temperature and precipitaton combined
+save_plot("figures/temp_precip_time_series.png",
+          plot_grid(temp_plot, precip_plot, 
+                    labels = "auto", 
+                    align = "v", 
+                    axis = "tb"),
+          base_aspect_ratio = 3.2)
+# Plot per site
+precip_plot_by_site <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP < 15500) %>%
+                                mutate(site = ordered(site, levels = levels(fct_reorder(hamburgian_sites$site, hamburgian_sites$lat)))),
+                              aes(x = year_BP + 50,
+                                  y = precip,
+                                  colour = site)) +
   geom_line() +
+  geom_segment(data = hamburgian_sites,
+               mapping = aes(x = 14100,
+                             xend = 14500,
+                             y = mean_precip, 
+                             yend = mean_precip),
+               colour = "grey30") +
   geom_segment(data = hamburgian_sites,
                mapping = aes(x = pulse_1_end,
                              xend = pulse_1_start,
                              y = mean_precip_pulse_1, 
                              yend = mean_precip_pulse_1),
-               colour = "black") +
+               colour = "dodgerblue2") +
   geom_segment(data = hamburgian_sites,
                mapping = aes(x = pulse_2_end,
                              xend = pulse_2_start,
                              y = mean_precip_pulse_2, 
                              yend = mean_precip_pulse_2),
                colour = "black") +
+  labs(x = "Year BP", y = "Annual Precipitation (mm)") +
+  scale_x_reverse(limits = c(15500, 13000),
+                  breaks = seq(15500, 13000, -500),
+                  labels = rev(c("13.0k", "13.5k", "14.0k", "14.5k", "15.0k", "15.5k"))) +
+  scale_y_continuous(limits = c(400, 1100),
+                     breaks = seq(400,1200,200)) +
+  scale_colour_discrete_qualitative(palette = "Dark2") + 
   geom_text(data = hamburgian_sites,
             mapping = aes(x = pulse_1_start + 100,
                           y = mean_precip_pulse_1,
@@ -311,46 +577,26 @@ precip_plot <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP <= 15500) 
             vjust = 0.5,
             hjust = 0,
             size = 2,) +
-  labs(x = "Year BP", y = "Annual Precipitation [mm] (Bio12)") +
-  scale_x_reverse(limits = c(15500, 13000),
-                  breaks = seq(15500, 13000, -500),
-                  labels = rev(c("13.0k", "13.5k", "14.0k", "14.5k", "15.0k", "15.5k"))) +
-  scale_y_continuous(limits = c(400, 1100),
-                     breaks = seq(400,1200,200)) +
-  scale_colour_discrete_qualitative(palette = "Dark2") +
+  facet_wrap(vars(site),
+                                    scales = "free") +
   theme_cowplot(8) +
   theme(legend.position = "none",
         strip.background = element_rect(fill = NA),
-        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
-
-save_plot("figures/figure1_precip.png",
-          precip_plot,
-          base_aspect_ratio = 1.6,
-          base_height = 4)
-
-# Plot per site
-precip_plot <- precip_plot + facet_wrap(vars(site),
-                                    scales = "free") +
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
   theme(axis.title = element_text(face = "bold"))
 save_plot("figures/figure1_precip_by_site.png",
-          precip_plot,
+          precip_plot_by_site,
           base_asp = 1.6,
           base_height = 20)
 
 ## 3) Raster Maps ----
 area_of_interest <- extent(c(-11,32,49,60)) 
-time_range_bp <- data.frame(min_bp = 15000-2000,
-                         max_bp = 13800-2000,
-                         min_cent = 150-20,
-                         max_cent = 138-20,
-                         pulse_1_start = 14500-2000,
-                         pulse_1_end = 14300-2000,
-                         pulse_2_start = 14200-2000,
-                         pulse_2_end = 14100-2000,
-                         pulse_1_min_cent = 145-20,
-                         pulse_1_max_cent = 143-20,
-                         pulse_2_min_cent = 142-20,
-                         pulse_2_max_cent = 141-20)
+time_range_bp <- data.frame(min_cent = 144-20,
+                            max_cent = 141-20,
+                            pulse_1_min_cent = 144-20,
+                            pulse_1_max_cent = 143-20,
+                            pulse_2_min_cent = 141-20,
+                            pulse_2_max_cent = 141-20)
 
 
 
@@ -546,9 +792,9 @@ plot_ham_temp_map <- function(base_raster,
   return("Done.")
 }
 
-# Mean preciptation map 15k-13.5k BP
+# Mean preciptation map 14.5k-14.1k BP
 plot_ham_temp_map(base_raster = "hamburgian_mean_temp",
-                  main_title = "Mean Temperature 15k-13.5k BP (°C)",
+                  main_title = "Mean Temperature 14.5k-14.1k BP (°C)",
                   file_name = "figures/mean_temp.png")
 # Mean temperature map Pulse 1 14.5k-14.3k BP
 plot_ham_temp_map(base_raster = "hamburgian_mean_temp_pulse_1",
@@ -648,9 +894,9 @@ plot_ham_precip_map <- function(base_raster,
         dev.off()
 }
 
-# Mean preciptation map 15k-13.5k BP
+# Mean preciptation map 14.5k-14.1k BP
 plot_ham_precip_map(base_raster = "hamburgian_mean_precip",
-                  main_title = "Mean Precipitation 15k-13.5k BP (mm)",
+                  main_title = "Mean Precipitation 14.5k-14.1k BP (mm)",
                   file_name = "figures/mean_precip.png")
 
 # Mean preciptation map 14.5k-14.3k BP
@@ -659,7 +905,7 @@ plot_ham_precip_map(base_raster = "hamburgian_mean_precip_pulse_1",
                     file_name = "figures/mean_precip_pulse_1.png")
 
 
-# Mean preciptation map 14.7k-14.5k BP
+# Mean preciptation map 14.2k-14.1k BP
 plot_ham_precip_map(base_raster = "hamburgian_mean_precip_pulse_2",
                     main_title = "Mean Precipitation 14.2k-14.1k BP (mm)",
                     file_name = "figures/mean_precip_pulse_2.png")
@@ -687,8 +933,6 @@ all_equal(hamburgian_sites %>%
             select(site,
                    mean_temp,
                    mean_precip))
-
-set.seed(6)
 
 # Mask rasters
 hamburgian_mean_temp_masked <- mask(
@@ -728,9 +972,10 @@ temp_vs_precip_plot <- ggplot() +
   geom_point(data = random_sample,
              aes(x = mean_temp,
                  y = mean_precip),
-             colour = "grey",
-             fill = "grey",
+             colour = "grey30",
+             fill = "grey30",
              alpha = 0.25,
+             size = 2,
              shape = 21
   ) +
   geom_point(data = hamburgian_sites %>% mutate(chron_association = ordered(chron_association,
@@ -743,29 +988,35 @@ temp_vs_precip_plot <- ggplot() +
                  colour = chron_association,
                  fill = chron_association),
              shape = 21,
-             alpha = 0.75) +
-  labs(x = "Mean Temperature (°C)",
-       y = "Mean Precipitation (mm)") +
-  scale_x_continuous(limits = c(-7, 10),
-                     breaks = seq(-6, 10, 2)) +
-  scale_y_continuous(limits = c(400, 2500)) +
-  scale_colour_manual(values = c("grey30", "black", "dodgerblue2")) +
-  scale_fill_manual(values = c("grey30", "black", "dodgerblue2")) +
-  annotate("text", x = 8, y = 2500, 
+             alpha = 0.75, 
+             size = 2) +
+  labs(x = "Mean Temperature 14.5-14.1k BP (°C)",
+       y = "Mean Precipitation 14.5-14.1k BP (mm)") +
+  scale_x_continuous(limits = c(-4, 12),
+                     breaks = seq(-4, 12, 2)) +
+  scale_y_continuous(limits = c(400, 2600)) +
+  scale_colour_manual(values = c("black", "black", "black")) +
+  scale_fill_manual(values = c("grey90", "black", "dodgerblue2")) +
+  annotate("text", x = 8, y = 2600, 
            colour = "dodgerblue2", hjust = 0, vjust = 0.4,
            label = "Pulse 1") +
-  annotate("text", x = 8, y = 2375,
+  annotate("text", x = 8, y = 2475,
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Pulse 2") +
-  annotate("text", x = 8, y = 2250,
-           colour = "grey30", hjust = 0, vjust = 0.4,
+  annotate("text", x = 8, y = 2350,
+           colour = "grey60", hjust = 0, vjust = 0.4,
            label = "Uncertain") +
-  annotate("point", x = 7.7, y = 2500, 
-           colour = "dodgerblue2") +
-  annotate("point", x = 7.7, y = 2375,
-           colour = "black") +
-  annotate("point", x = 7.7, y = 2250,
-           colour = "grey30") +
+  annotate("text", x = 8, y = 2225,
+           colour = "grey30", hjust = 0, vjust = 0.4,
+           label = "Backg. Sample") +
+  annotate("point", x = 7.7, y = 2600, shape = 21, size = 2,
+           colour = "black", fill = "dodgerblue2") +
+  annotate("point", x = 7.7, y = 2475, shape = 21, size = 2,
+           colour = "black", fill = "black") +
+  annotate("point", x = 7.7, y = 2350, shape = 21, size = 2,
+           colour = "black", fill = "grey90") +
+  annotate("point", x = 7.7, y = 2225, shape = 21, size = 2,
+           colour = "black", fill = "grey30", alpha = 0.75) +
   theme_cowplot(14) +
   theme(legend.position = "none")
 save_plot("figures/temp_vs_precip.png",
@@ -781,50 +1032,81 @@ temp_vs_precip_plot_by_pulse <- ggplot() +
              colour = "lightskyblue2",
              fill = "lightskyblue2",
              alpha = 0.25,
+             size = 2,
              shape = 21
              ) +
   geom_point(data = random_sample,
              aes(x = mean_temp_pulse_2,
                  y = mean_precip_pulse_2),
-             colour = "grey",
-             fill = "grey",
+             colour = "grey30",
+             fill = "grey30",
              alpha = 0.25,
-             shape = 21
+             shape = 21,
+             size = 2
              ) +
+  geom_point(data = hamburgian_sites %>% filter(chron_association == "uncertain"),
+             aes(x = mean_temp,
+                 y = mean_precip),
+             colour = "black",
+             fill = "grey90",
+             alpha = 0.75,
+             shape = 21,
+             size = 2
+  ) +
   geom_point(data = hamburgian_sites,
              aes(x = mean_temp_pulse_1,
                  y = mean_precip_pulse_1),
-             colour = "dodgerblue2",
-             shape = 16
+             colour = "black",
+             fill = "dodgerblue2",
+             alpha = 0.75,
+             shape = 21,
+             size = 2
              ) +
   geom_point(data = hamburgian_sites,
              aes(x = mean_temp_pulse_2,
                  y = mean_precip_pulse_2),
              colour = "black",
-             shape = 16
+             alpha = 0.75,
+             shape = 16,
+             size = 2
              ) +
-  labs(x = "Mean Temperature (°C)",
-       y = "Mean Precipitation (mm)") +
+  labs(x = "Mean Temperature of Pulse (°C)",
+       y = "Mean Precipitation of Pulse (mm)") +
   scale_x_continuous(limits = c(-7, 14),
                      breaks = seq(-6, 14, 2)) +
-  scale_y_continuous(limits = c(400, 2500)) +
-  annotate("text", x = 12, y = 2500, 
+  scale_y_continuous(limits = c(400, 2600)) +
+  annotate("text", x = 6, y = 2600, 
            colour = "dodgerblue2", hjust = 0, vjust = 0.4,
-           label = "Pulse 1") +
-  annotate("text", x = 12, y = 2400,
+           label = "Pulse 1 (14.5-14.3k BP)") +
+  annotate("text", x = 6, y = 2475,
            colour = "black", hjust = 0, vjust = 0.4,
-           label = "Pulse 2") +
-  annotate("point", x = 11.7, y = 2500, 
-           colour = "dodgerblue2") +
-  annotate("point", x = 11.7, y = 2400,
-           colour = "black") +
+           label = "Pulse 2 (14.2-14.1k BP)") +
+  annotate("text", x = 6, y = 2350,
+           colour = "grey60", hjust = 0, vjust = 0.4,
+           label = "Uncertain (14.5-14.1k BP)") +
+  annotate("text", x = 6, y = 2225,
+           colour = "lightskyblue2", hjust = 0, vjust = 0.4,
+           label = "Backg. Sample (14.5-14.3k BP)") +
+  annotate("text", x = 6, y = 2100,
+           colour = "grey30", hjust = 0, vjust = 0.4,
+           label = "Backg. Sample (14.2-14.1k BP)") +
+  annotate("point", x = 5.7, y = 2600, shape = 21, size = 2,
+           colour = "black", fill = "dodgerblue2") +
+  annotate("point", x = 5.7, y = 2475, shape = 21, size = 2,
+           colour = "black", fill = "black") +
+  annotate("point", x = 5.7, y = 2350, shape = 21, size = 2,
+           colour = "black", fill = "grey90") +
+  annotate("point", x = 5.7, y = 2225, shape = 21, size = 2,
+           colour = "black", fill = "dodgerblue2", alpha = 0.25) +
+  annotate("point", x = 5.7, y = 2125, shape = 21, size = 2,
+           colour = "grey30", fill = "grey30", alpha = 0.25) +
   theme_cowplot(14) 
 save_plot("figures/temp_vs_precip_by_pulse.png",
           temp_vs_precip_plot_by_pulse,
           base_aspect_ratio = 1.6,
           base_height = 4)
 
-# 4) BIOCLIM Model ----
+# 4) BIOCLIM Models ----
 
 # Add cell_id to main geometry to allow for exclusion of multiple samples from
 # the a single cell
@@ -865,6 +1147,20 @@ bioclim_training_all <- hamburgian_sites %>%
   distinct(cell_id, precip_var, mean_precip) %>%
   mutate(period = gsub("mean_precip_(.*)", "\\1", precip_var)) %>%
   full_join(bioclim_training_all, .)
+bioclim_training_all <- hamburgian_sites %>% filter(!(cell_id %in% bioclim_training_all$cell_id)) %>% 
+  st_drop_geometry() %>%
+  select(site,
+         lat,
+         long,
+         cell_id,
+         mean_temp,
+         mean_precip,
+         chron_association) %>%
+  mutate(temp_var = "mean_temp", 
+         precip_var = "mean_precip",
+         period = "uncertain") %>%
+  distinct(cell_id, temp_var, mean_temp, precip_var, mean_precip, period) %>%
+  full_join(bioclim_training_all)
 
 # Quality control
 view(bioclim_training_all)
@@ -873,20 +1169,7 @@ view(bioclim_training_all)
 # Retain climate columns only
 bioclim_training <- select(bioclim_training_all, "mean_temp", "mean_precip")
 
-# repeat for mean values
-bioclim_training_mean  <- hamburgian_sites %>%
-  st_drop_geometry() %>%
-  filter(chron_association != "uncertain") %>%
-  select(site, 
-         lat,
-         long,
-         cell_id,
-         mean_temp,
-         mean_precip) %>%
-  distinct(cell_id, mean_temp, mean_precip) %>%
-  select(-cell_id)
-
-# Prepare raster stacks for predictions
+# Prepare raster stacks for predictions and background data
 climate_mean <-  stack(hamburgian_mean_temp,
                        hamburgian_mean_precip)
 climate_mean <- setNames(climate_mean, 
@@ -901,6 +1184,8 @@ climate_pulse_2 <- setNames(climate_pulse_2,
                                 c("mean_temp", "mean_precip"))
 
 # Mask out everything but land
+climate_mean_masked <- mask(climate_mean,
+                            land_for_maps)
 climate_pulse_1_masked <- mask(climate_pulse_1,
                                    land_for_maps)
 climate_pulse_2_masked <- mask(climate_pulse_2,
@@ -909,10 +1194,12 @@ climate_pulse_2_masked <- mask(climate_pulse_2,
 # Generate random background points for evaluation (absence data)
 set.seed(50)
 absence_data <- randomPoints(climate_pulse_1_masked,
-                             200)
+                             300)
 colnames(absence_data) <- c('lon', 'lat')
 absence_data <- as.data.frame(absence_data)
-
+absence_data$period <- c(rep("uncertain", nrow(absence_data)/3),
+                         rep("pulse_1", nrow(absence_data)/3),
+                         rep("pulse_2", nrow(absence_data)/3))
 # Add cell_ids
 absence_data$cell_id <- st_as_sf(absence_data,
                                  coords = c("lon", "lat"),
@@ -926,59 +1213,99 @@ absence_data$cell_id <- st_as_sf(absence_data,
 # filter cell_ids to avoid coccurence with presence data
 absence_data <- absence_data[!(absence_data$cell_id %in% bioclim_training_all$cell_id),]
 
-# fill in absence data, half from classic, half from halvelte
-absence_data$mean_temp[1:floor(nrow(absence_data)/2)] <- raster::extract(
-  climate_pulse_1[["mean_temp"]], absence_data$cell_id[1:floor(nrow(absence_data)/2)])
-absence_data$mean_precip[1:floor(nrow(absence_data)/2)] <- raster::extract(
-  climate_pulse_1[["mean_precip"]], absence_data$cell_id[1:floor(nrow(absence_data)/2)])
-
-absence_data$mean_temp[(floor(nrow(absence_data)/2)+1):nrow(absence_data)] <- raster::extract(
-  climate_pulse_2[["mean_temp"]], absence_data$cell_id[(floor(nrow(absence_data)/2)+1):nrow(absence_data)])
-absence_data$mean_precip[(floor(nrow(absence_data)/2)+1):nrow(absence_data)] <- raster::extract(
-  climate_pulse_2[["mean_precip"]], absence_data$cell_id[(floor(nrow(absence_data)/2)+1):nrow(absence_data)])
-
-# Ten-fold cross validation
-set.seed(7)
-# Group training data
-bioclim_training_mean$group <- kfold(nrow(bioclim_training_mean), 5)
-# Prepare output lists
-bioclim_models <- list()
-bioclim_evals <- list()
-bioclim_threshs <- list() 
-
-# Carry out cross validation
-for(i in 1:5){
-  # Fit Bioclim envlope model to training data
-  bioclim_models[i] <- bioclim(bioclim_training_mean[bioclim_training_mean$group != i, 1:2])
-
-  # Evaluate model
-  bioclim_evals[i] <- evaluate(p = bioclim_training_mean[bioclim_training_mean$group == i, 1:2],
-                           a = absence_data[,4:5],
-                           model = bioclim_models[[i]])
-  # Determine threshold
-  bioclim_threshs[i] <- threshold(bioclim_evals[[i]], 'spec_sens')
+# fill in absence data, 1/3 from each climate_data
+absence_data$mean_temp <- c(raster::extract(climate_mean_masked[["mean_temp"]], 
+                                            absence_data$cell_id[absence_data$period == "uncertain"]),
+                            raster::extract(climate_pulse_1_masked[["mean_temp"]], 
+                                            absence_data$cell_id[absence_data$period == "pulse_1"]),
+                            raster::extract(climate_pulse_2_masked[["mean_temp"]], 
+                                            absence_data$cell_id[absence_data$period == "pulse_2"]))
+absence_data$mean_precip <- c(raster::extract(climate_mean_masked[["mean_precip"]], 
+                                            absence_data$cell_id[absence_data$period == "uncertain"]),
+                            raster::extract(climate_pulse_1_masked[["mean_precip"]], 
+                                            absence_data$cell_id[absence_data$period == "pulse_1"]),
+                            raster::extract(climate_pulse_2_masked[["mean_precip"]], 
+                                            absence_data$cell_id[absence_data$period == "pulse_2"]))
+                            
+# Define function to carry out model fitting and cross validation
+fit_bioclim <- function(training_data, absence_data, k){
+  training_data$group <- kfold(nrow(training_data), k)
+  
+  # Prepare output lists
+  bioclim_models <- list()
+  bioclim_evals <- list()
+  
+  # Carry out cross validation
+  for(i in 1:5){
+    # Fit Bioclim envlope model to training data
+    bioclim_models[i] <- bioclim(training_data[training_data$group != i, 1:2])
+    
+    # Evaluate model
+    bioclim_evals[i] <- evaluate(p = training_data[training_data$group == i, 1:2],
+                                 a = absence_data,
+                                 model = bioclim_models[[i]])
+  }
+  
+  # Calc mean auc
+  mean_auc <- mean(unlist(lapply(bioclim_evals, function(x) x@auc))) 
+  
+  # Calc mean_r 
+  mean_cor <- mean(unlist(lapply(bioclim_evals, function(x) x@cor))) 
+ 
+  # fit single model 
+  bioclim_model <- bioclim(training_data[,1:2])
+  bioclim_eval <- evaluate(training_data[,1:2],
+                           absence_data,
+                           bioclim_model)
+  bioclim_thresh <-  threshold(bioclim_eval, 'spec_sens') 
+  
+  # return all outputs
+  list(bioclim_models = bioclim_models,
+       bioclim_evals = bioclim_evals,
+       mean_auc = mean_auc,
+       mean_cor = mean_cor,
+       bioclim_model = bioclim_model,
+       bioclim_eval = bioclim_eval,
+       bioclim_thresh = bioclim_thresh)
 }
-mean(unlist(lapply(bioclim_evals, function(x) x@auc))) 
 
-# fit single model 
-bioclim_model <- bioclim(bioclim_training_mean[,1:2])
-bioclim_eval <- evaluate(bioclim_training_mean[,1:2],
-                         absence_data[,4:5],
-                         bioclim_model)
-bioclim_thresh <-  threshold(bioclim_eval, 'spec_sens')
+# Fit model for all three time_periods
+set.seed(7)
 
-# Predict for both time periods
-predictions_mean <- predict(climate_mean,
-                            bioclim_model)
+# Global model
+model_global <- fit_bioclim(select(bioclim_training_all, mean_temp, mean_precip),
+                            select(absence_data, mean_temp, mean_precip),
+                            5)
+# Pulse 1
+model_pulse_1 <- fit_bioclim(bioclim_training_all %>% 
+                               filter(period == "pulse_1") %>%
+                               select(mean_temp, mean_precip),
+                             absence_data %>% 
+                               filter(period == "pulse_1") %>%
+                               select(mean_temp, mean_precip),
+                             5)
+
+# Pulse 2
+model_pulse_2 <- fit_bioclim(bioclim_training_all %>% 
+                               filter(period == "pulse_2") %>%
+                               select(mean_temp, mean_precip),
+                             absence_data %>% 
+                               filter(period == "pulse_2") %>%
+                               select(mean_temp, mean_precip),
+                             5)
+
+# Predict for core time periods
+predictions_global <- predict(climate_mean,
+                              model_global[["bioclim_model"]])
 predictions_pulse_1 <- predict(climate_pulse_1,
-                                   bioclim_model) 
+                                   model_pulse_1[["bioclim_model"]]) 
 predictions_pulse_2 <- predict(climate_pulse_2, 
-                                   bioclim_model)
+                                   model_pulse_2[["bioclim_model"]])
 
 # Apply threshold
-predictions_mean_thresh <- predictions_mean > bioclim_thresh
-predictions_pulse_1_thresh <- predictions_pulse_1 > bioclim_thresh
-predictions_pulse_2_thresh <- predictions_pulse_2 > bioclim_thresh
+predictions_global_thresh <- predictions_global > model_global[["bioclim_thresh"]]
+predictions_pulse_1_thresh <- predictions_pulse_1 > model_pulse_1[["bioclim_thresh"]]
+predictions_pulse_2_thresh <- predictions_pulse_2 > model_pulse_2[["bioclim_thresh"]]
 
 # Visualise predictions
 
@@ -1073,89 +1400,117 @@ plot_preds_map <- function(base_raster,
 }
 
 # |_ Mean ----
-plot_preds_map(base_raster = predictions_mean,
-               main = "Raw Predictions 15.0k-13.8k BP ", 
-               file_name = "figures/predictions_mean1.png")
-plot_preds_map(base_raster = predictions_mean_thresh,
-               main = "Presence/Absence Predictions 15.0k-13.8k BP ", 
-               file_name = "figures/predictions_mean_thresh.png",
+plot_preds_map(base_raster = predictions_global,
+               main = "Global Model Raw Pred. 14.5k-14.1k BP ", 
+               file_name = "figures/predictions_global.png")
+plot_preds_map(base_raster = predictions_global_thresh,
+               main = "Global Model Pres./Abs. 14.5k-14.1k BP ", 
+               file_name = "figures/predictions_global_thresh.png",
                palette = c("grey30", "#f38f32"))
 
 # |_ Pulse 1----
 plot_preds_map(base_raster = predictions_pulse_1,
-               main = "Raw Predictions 14.5k-14.3k BP ", 
+               main = "Pulse 1 Model Raw Pred. 14.5k-14.3k BP ", 
                file_name = "figures/predictions_pulse_1.png")
 plot_preds_map(base_raster = predictions_pulse_1_thresh,
-               main = "Presence/Absence  Predictions 14.5k-14.3k BP ", 
+               main = "Pulse 1 Model Pres./Abs. 14.5k-14.3k BP ", 
                file_name = "figures/predictions_pulse_1_thresh.png",
                palette = c("grey30", "#f38f32"))
 
 # |_ Pulse 2 ----
 plot_preds_map(base_raster = predictions_pulse_2,
-               main = "Raw Predictions 14.2k-14.1k BP ", 
+               main = "Pulse 2 Model Raw. Pred 14.2k-14.1k BP ", 
                file_name = "figures/predictions_pulse_2.png")
 plot_preds_map(base_raster = predictions_pulse_2_thresh,
-               main = "Presence/Absence  Predictions 14.2k-14.1k BP ", 
+               main = "Pulse 2 Model Pres./Abs. 14.2k-14.1k BP ", 
                file_name = "figures/predictions_pulse_2_thresh.png",
                palette = c("grey30", "#f38f32"))
 
-# |_ Predictions Time-Series ----
+# 5) Time-Series for Predictions ----
 
-# Set range
-time_range <- seq(time_range_bp$max_cent, time_range_bp$min_cent, 1)
+
+# Set time range
+start_cent <- 150-20
+end_cent <- 130-20
+time_range <- seq(end_cent, start_cent, 1)
 
 # Crop and stack rasters
 time_series_climate <- lapply(time_range, function(cent_bce){
-  cat(paste0(cent_bce, " ... \n"))
+  cat(paste0(cent_bce, ":\n"))
   temp_raster_name <- paste0("temp_", cent_bce, "_BCE")
   precip_raster_name <- paste0("precip_", cent_bce, "_BCE")
   climate_bce <- stack(crop(temp[[temp_raster_name]],area_of_interest),
                        crop(precip[[precip_raster_name]], area_of_interest))
 }) %>% setNames(time_range)
 
-# Calculate predictions
-preds_time_series <- lapply(time_series_climate, function(climate_raster){
-  cat(paste0(names(climate_raster), " ... \n"))
+# Define function to calculate predictions for a given model
+predict_time_series <- function(bioclim_model_list, model_name, file_name){
+  # Status
+  cat(paste0("Starting ", model_name, " Model ...\n"))
   
-  # update climate raster names to match model
-  climate_raster <- setNames(climate_raster, c("mean_temp", "mean_precip"))
-  # Predict for both time periods
-  predictions <- predict(climate_raster,
-                                 bioclim_model)
-  # Apply threshold
-  predictions <- predictions > bioclim_thresh
+  # create folder
+  out_folder <- paste0("figures/preds_ts_", file_name)
+  dir.create(out_folder)
   
-  return(predictions)
-}) %>% setNames(time_range)
-
-# Generate Plots
-lapply(seq_along(time_range), function(index){
-  k_year_bp <- time_range[index] / 10 + 2
-  cat(paste0(k_year_bp, "k BP...\n"))
-  plot_preds_map(base_raster = preds_time_series[[index]],
-                 main = paste0("Predictions ", formatC(k_year_bp, 1, format = "f"), "k BP"), 
-                 file_name = paste0("figures/preds_time-series/predictions_", 
-                                    formatC(k_year_bp, 1, format = "f"), "k_BP.png"),
+  # Calculate predictions
+  cat(paste0("Calculating predictions ... \n"))
+  bioclim_model <- bioclim_model_list[["bioclim_model"]]
+  bioclim_thresh <- bioclim_model_list[["bioclim_thresh"]]
+  
+  preds_time_series <- lapply(time_series_climate, function(climate_raster){
+    cat(paste0(names(climate_raster), " \n"))
+    
+    # update climate raster names to match model
+    climate_raster <- setNames(climate_raster, c("mean_temp", "mean_precip"))
+    # Predict for both time periods
+    predictions <- predict(climate_raster,
+                           bioclim_model)
+    # Apply threshold
+    predictions <- predictions > bioclim_thresh
+    
+    return(predictions)
+  }) %>% setNames(time_range)
+  
+  # Generate Plots
+  cat(paste0("\nGenerating maps ... \n"))
+  lapply(seq_along(time_range), function(index){
+    k_year_bp_start <- formatC(time_range[index] / 10 + 2.1, 1, format = "f")
+    k_year_bp_end <- formatC(time_range[index] / 10 + 2, 1, format = "f")
+    cat(paste0( k_year_bp_start, "-", k_year_bp_end, "k BP\n"))
+    plot_preds_map(base_raster = preds_time_series[[index]],
+                   main = paste0(model_name, " Model Pres./Abs. ", k_year_bp_start, "-", k_year_bp_end, "k BP"), 
+                   file_name = paste0(out_folder, "/predictions_", 
+                                      k_year_bp_start, "-", k_year_bp_end, "k_BP.png"),
                  palette = c("grey30", "#f38f32"))
-  return("Done")
-})
+  })
+  
+  # Generate Animation
+  cat(paste0("\nAnimating time-series ... \n"))
+  # List files and loade as images
+  imgs <- list.files(out_folder, 
+                     pattern = ".png", full.names = TRUE)
 
-# |_ Generate Animation ----
-library("magick")
-# List files and loade as images
-imgs <- list.files("figures/preds_time-series/", 
-                   pattern = ".png", full.names = TRUE)
-img_list <- lapply(rev(imgs), image_read)
+  img_list <- lapply(rev(imgs), image_read)
+  
+  # join images 
+  img_joined <- image_join(img_list)
+  
+  # animate at 1 frame per second
+  img_animated <- image_animate(img_joined, fps = 1)
+  
+  # Export as gif
+  image_write(image = img_animated,
+              path = paste0(out_folder, "/preds_time_series_", file_name, ".gif"))
+  
+  cat(paste0("Done. \n"))
+  return(NULL)
+}
 
-# join images 
-img_joined <- image_join(img_list)
+# Generate time-series
+predict_time_series(model_global, "Global", "global")
+predict_time_series(model_pulse_1, "Pulse 1", "pulse_1")
+predict_time_series(model_pulse_2, "Pulse 2", "pulse_2")
 
-# animate at 1 frame per second
-img_animated <- image_animate(img_joined, fps = 0.5)
-
-# Export as gif
-image_write(image = img_animated,
-            path = "figures/preds_time-series/preds_time_series.gif")
 
 
 
