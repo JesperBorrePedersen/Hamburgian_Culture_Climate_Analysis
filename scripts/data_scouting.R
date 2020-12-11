@@ -14,6 +14,7 @@ library(rnaturalearth)
 library(rnaturalearthdata)
 library(dismo)
 library(magick)
+library(landscapemetrics)
 
 rasterOptions(progress = "text")
 
@@ -246,14 +247,16 @@ summary_stats <- hamburgian_sites %>%
   summarise(n_sites = sum(!is.na(mean_temp)),
             mean = mean(mean_temp, na.rm = T),
             min = min(mean_temp, na.rm = T),
-            max = max(mean_temp, na.rm = T)) %>% 
+            max = max(mean_temp, na.rm = T),
+            sd = sd(mean_temp, na.rm = T)) %>% 
   t()
 summary_stats <- hamburgian_sites %>%
   st_drop_geometry() %>%
   summarise(n_sites = sum(!is.na(mean_temp_pulse_1)),
             mean = mean(mean_temp_pulse_1, na.rm = T),
             min = min(mean_temp_pulse_1, na.rm = T),
-            max = max(mean_temp_pulse_1, na.rm = T)) %>% 
+            max = max(mean_temp_pulse_1, na.rm = T),
+            sd = sd(mean_temp_pulse_1, na.rm = T)) %>% 
   t() %>%
   cbind(summary_stats, .)
 summary_stats <- hamburgian_sites %>%
@@ -261,7 +264,8 @@ summary_stats <- hamburgian_sites %>%
   summarise(n_sites = sum(!is.na(mean_temp_pulse_2)),
             mean = mean(mean_temp_pulse_2, na.rm = T),
             min = min(mean_temp_pulse_2, na.rm = T),
-            max = max(mean_temp_pulse_2, na.rm = T)) %>% 
+            max = max(mean_temp_pulse_2, na.rm = T),
+            sd = sd(mean_temp_pulse_2, na.rm = T)) %>% 
   t() %>%
   cbind(summary_stats, .)
 summary_stats <- hamburgian_sites %>%
@@ -269,7 +273,8 @@ summary_stats <- hamburgian_sites %>%
   summarise(n_sites = sum(!is.na(mean_precip)),
             mean = mean(mean_precip, na.rm = T),
             min = min(mean_precip, na.rm = T),
-            max = max(mean_precip, na.rm = T)) %>% 
+            max = max(mean_precip, na.rm = T),
+            sd = sd(mean_precip, na.rm = T)) %>% 
   t() %>%
   cbind(summary_stats, .)
 summary_stats <- hamburgian_sites %>%
@@ -277,7 +282,8 @@ summary_stats <- hamburgian_sites %>%
   summarise(n_sites = sum(!is.na(mean_precip_pulse_1)),
             mean = mean(mean_precip_pulse_1, na.rm = T),
             min = min(mean_precip_pulse_1, na.rm = T),
-            max = max(mean_precip_pulse_1, na.rm = T)) %>% 
+            max = max(mean_precip_pulse_1, na.rm = T),
+            sd = sd(mean_precip_pulse_1, na.rm = T)) %>% 
   t() %>%
   cbind(summary_stats, .)
 summary_stats <- hamburgian_sites %>%
@@ -285,7 +291,8 @@ summary_stats <- hamburgian_sites %>%
   summarise(n_sites = sum(!is.na(mean_precip_pulse_2)),
             mean = mean(mean_precip_pulse_2, na.rm = T),
             min = min(mean_precip_pulse_2, na.rm = T),
-            max = max(mean_precip_pulse_2, na.rm = T)) %>% 
+            max = max(mean_precip_pulse_2, na.rm = T),
+            sd = sd(mean_precip_pulse_2, na.rm = T)) %>% 
   t() %>%
   cbind(summary_stats, .) %>% 
   as.data.frame() %>%
