@@ -299,7 +299,7 @@ summary_stats[2:4,] <- apply(summary_stats[2:4,],
                              function(x) formatC(as.numeric(x), digits = 1, format = "f"))
 write_csv(summary_stats, "tables/summary_stats.csv")
 
-# |_ Test differences ----
+# |_ Difference tests ----
 # Prepare temperature data
 temp_summary <- hamburgian_sites %>%
   st_drop_geometry() %>%
