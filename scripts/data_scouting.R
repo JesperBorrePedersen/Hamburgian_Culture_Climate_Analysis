@@ -2,7 +2,7 @@
 # Jakob Assmann j.assmann@bios.au.dk 17 August 2020
 
 ## 1) Housekeeping ----
-# |_ Load data ----
+# |_ Global matters ----
 # Dependencies
 library(sf)
 library(raster)
@@ -16,8 +16,26 @@ library(dismo)
 library(magick)
 library(landscapemetrics)
 
+# Raster options
 rasterOptions(progress = "text")
 
+# |_ Set colour + shape ----
+# Colour
+col_pulse1 <- "black"
+col_pulse1_transparent <- "#1C87E6FF"
+col_pulse2 <- "black"
+col_pulse2_transparent <- "#9317FCFF"
+col_grey_light <- "#D3D3D3FF"
+col_grey_light_transparent <- "#D3D3D344"
+col_grey_dark <- "#696969FF"
+col_grey_dark_transparent <- "#69696944"
+
+# shape
+shape_pulse_1 <- 21
+shape_pulse_2 <- 21
+shape_uncertain <- 63
+
+# |_ Load data ----
 # Load in CHELSA LGM files
 temp <- list.files(
   "O:/Nat_Ecoinformatics/B_Read/World/Climate/PaleoClimate/Original/CHELSA_TRACE/BIO_01/",
@@ -734,11 +752,11 @@ plot_ham_temp_map <- function(base_raster,
           latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
           latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
           latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
-                                        col = "gray90", pch = 63, cex = 0.8)) +
+                                        col = "white", pch = shape_uncertain, cex = 0.8)) +
           latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
-                                        col = "dodgerblue2", pch = 1, cex = 1.05)) +
+                                        col = col_pulse1, fill = col_pulse1_transparent, pch = shape_pulse_1)) +
           latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
-                                        col = "black", pch = 3)) +
+                                        col = col_pulse2, fill = col_pulse2_transparent, pch = shape_pulse_2)) +
           
           latticeExtra::layer({
             centre_x <- 27.5
@@ -753,21 +771,23 @@ plot_ham_temp_map <- function(base_raster,
             
             grid.points(#label = "Pulse 1",
               x=centre_x-2.75, y=centre_y+2.5/4,
-              pch = 1,
-              gp=gpar(cex = 0.65,
-                      col = "dodgerblue2"),
+              pch = shape_pulse_1,
+              gp=gpar(cex = 0.45,
+                      col = col_pulse1,
+                      fill = col_pulse1_transparent),
               default.units='native')
             grid.points(#label = "Pulse 2",
               x=centre_x-2.75, y=centre_y,
-              pch = 3,
-              gp=gpar(cex = 0.4,
-                      col = "black"),
+              pch = shape_pulse_2,
+              gp=gpar(cex = 0.45,
+                      col = col_pulse2,
+                      fill = col_pulse2_transparent),
               default.units='native')
             grid.points(#label = "Uncertain",
               x=centre_x-2.75, y=centre_y-2.5/4,
-              pch = 63,
+              pch = shape_uncertain,
               gp=gpar(cex = 0.65,
-                      col = "grey30"),
+                      col = col_grey_dark),
               default.units='native')
             
             grid.text(label = "Pulse 1",
@@ -799,7 +819,7 @@ plot_ham_temp_map <- function(base_raster,
   return("Done.")
 }
 
-# Mean preciptation map 14.5k-14.1k BP
+# Mean temperature map 14.5k-14.1k BP
 plot_ham_temp_map(base_raster = "hamburgian_mean_temp",
                   main_title = "Mean Temperature 14.5k-14.1k BP (°C)",
                   file_name = "figures/mean_temp.png")
@@ -839,11 +859,11 @@ plot_ham_precip_map <- function(base_raster,
           latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
           latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
           latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
-                                        col = "grey30", pch = 63, cex = 0.8)) +
+                                        col = col_grey_dark, pch = shape_uncertain, cex = 0.8)) +
           latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
-                                        col = "dodgerblue2", pch = 1, cex = 1.05)) +
+                                        col = col_pulse1, fill = col_pulse1_transparent, pch = shape_pulse_1)) +
           latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
-                                        col = "black", pch = 3)) +
+                                        col = col_pulse2, fill = col_pulse2_transparent, pch = shape_pulse_2)) +
           latticeExtra::layer({
             centre_x <- 27.5
             centre_y <- 58.3
@@ -856,21 +876,23 @@ plot_ham_precip_map <- function(base_raster,
             
             grid.points(#label = "Hamburgian",
               x=centre_x-2.75, y=centre_y+2.5/4,
-              pch = 1,
-              gp=gpar(cex = 0.65, 
-                      col = "dodgerblue2"),
+              pch = shape_pulse_1,
+              gp=gpar(cex = 0.45, 
+                      col = col_pulse1,
+                      fill = col_pulse1_transparent),
               default.units='native')
             grid.points(#label = "Havelte Group",
               x=centre_x-2.75, y=centre_y,
-              pch = 3,
-              gp=gpar(cex = 0.4, 
-                      col = "black"),
+              pch = shape_pulse_2,
+              gp=gpar(cex = 0.44, 
+                      col = col_pulse2,
+                      fill = col_pulse2_transparent),
               default.units='native')
             grid.points(#label = "Possibly Ham.",
               x=centre_x-2.75, y=centre_y-2.5/4,
               pch = 63,
               gp=gpar(cex = 0.65, 
-                      col = "grey30"),
+                      col = col_grey_dark),
               default.units='native')
             
             grid.text(label = "Pulse 1",
@@ -979,8 +1001,8 @@ temp_vs_precip_plot <- ggplot() +
   geom_point(data = random_sample,
              aes(x = mean_temp,
                  y = mean_precip),
-             colour = "grey30",
-             fill = "grey30",
+             colour = col_grey_dark,
+             fill = col_grey_dark,
              alpha = 0.25,
              size = 2,
              shape = 21
@@ -993,37 +1015,40 @@ temp_vs_precip_plot <- ggplot() +
              aes(x = mean_temp,
                  y = mean_precip,
                  colour = chron_association,
-                 fill = chron_association),
-             shape = 21,
-             alpha = 0.75, 
-             size = 2) +
+                 fill = chron_association,
+                 shape = chron_association,
+                 size = chron_association),
+             alpha = 1,
+             stroke = 1) +
   labs(x = "Mean Temperature 14.5-14.1k BP (°C)",
        y = "Mean Precipitation 14.5-14.1k BP (mm)") +
   scale_x_continuous(limits = c(-4, 12),
                      breaks = seq(-4, 12, 2)) +
   scale_y_continuous(limits = c(400, 2600)) +
-  scale_colour_manual(values = c("black", "black", "black")) +
-  scale_fill_manual(values = c("grey90", "black", "dodgerblue2")) +
+  scale_colour_manual(values = c(col_grey_light, col_pulse2, col_pulse1)) +
+  scale_size_manual(values = c(2.5,2,2)) +
+  scale_fill_manual(values = c(col_grey_light_transparent, col_pulse2_transparent, col_pulse1_transparent)) +
+  scale_shape_manual(values = c(shape_uncertain, shape_pulse_2, shape_pulse_1)) +
   annotate("text", x = 8, y = 2600, 
-           colour = "dodgerblue2", hjust = 0, vjust = 0.4,
+           colour = "black", hjust = 0, vjust = 0.4,
            label = "Pulse 1") +
   annotate("text", x = 8, y = 2475,
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Pulse 2") +
   annotate("text", x = 8, y = 2350,
-           colour = "grey60", hjust = 0, vjust = 0.4,
+           colour = "black", hjust = 0, vjust = 0.4,
            label = "Uncertain") +
   annotate("text", x = 8, y = 2225,
-           colour = "grey30", hjust = 0, vjust = 0.4,
+           colour = "black", hjust = 0, vjust = 0.4,
            label = "Backg. Sample") +
-  annotate("point", x = 7.7, y = 2600, shape = 21, size = 2,
-           colour = "black", fill = "dodgerblue2") +
-  annotate("point", x = 7.7, y = 2475, shape = 21, size = 2,
-           colour = "black", fill = "black") +
-  annotate("point", x = 7.7, y = 2350, shape = 21, size = 2,
-           colour = "black", fill = "grey90") +
+  annotate("point", x = 7.7, y = 2600, shape = shape_pulse_1, size = 2, stroke = 1,
+           colour = col_pulse1, fill = col_pulse1_transparent) +
+  annotate("point", x = 7.7, y = 2475, shape = shape_pulse_2, size = 2, stroke = 1,
+           colour = col_pulse2, fill = col_pulse2_transparent) +
+  annotate("point", x = 7.7, y = 2350, shape = shape_uncertain, size = 3, stroke = 1,
+           colour = col_grey_light, fill = col_grey_light) +
   annotate("point", x = 7.7, y = 2225, shape = 21, size = 2,
-           colour = "black", fill = "grey30", alpha = 0.75) +
+           colour = col_grey_dark, fill = col_grey_dark, alpha = 0.25) +
   theme_cowplot(14) +
   theme(legend.position = "none")
 save_plot("figures/temp_vs_precip.png",
@@ -1036,8 +1061,8 @@ temp_vs_precip_plot_by_pulse <- ggplot() +
   geom_point(data = random_sample,
              aes(x = mean_temp_pulse_1,
                  y = mean_precip_pulse_1),
-             colour = "lightskyblue2",
-             fill = "lightskyblue2",
+             colour = "grey60",
+             fill = "grey60",
              alpha = 0.25,
              size = 2,
              shape = 21
@@ -1045,8 +1070,8 @@ temp_vs_precip_plot_by_pulse <- ggplot() +
   geom_point(data = random_sample,
              aes(x = mean_temp_pulse_2,
                  y = mean_precip_pulse_2),
-             colour = "grey30",
-             fill = "grey30",
+             colour = col_grey_dark,
+             fill = col_grey_dark,
              alpha = 0.25,
              shape = 21,
              size = 2
@@ -1054,59 +1079,64 @@ temp_vs_precip_plot_by_pulse <- ggplot() +
   geom_point(data = hamburgian_sites %>% filter(chron_association == "uncertain"),
              aes(x = mean_temp,
                  y = mean_precip),
-             colour = "black",
-             fill = "grey90",
-             alpha = 0.75,
-             shape = 21,
-             size = 2
+             colour = col_grey_light,
+             fill = col_grey_light,
+             alpha = 1,
+             shape = shape_uncertain,
+             size = 2.5,
+             stroke = 1
   ) +
   geom_point(data = hamburgian_sites,
              aes(x = mean_temp_pulse_1,
                  y = mean_precip_pulse_1),
-             colour = "black",
-             fill = "dodgerblue2",
-             alpha = 0.75,
-             shape = 21,
-             size = 2
+             colour = col_pulse1,
+             fill = col_pulse1_transparent,
+             alpha = 1,
+             shape = shape_pulse_1,
+             size = 2,
+             stroke = 1
              ) +
   geom_point(data = hamburgian_sites,
              aes(x = mean_temp_pulse_2,
                  y = mean_precip_pulse_2),
-             colour = "black",
-             alpha = 0.75,
-             shape = 16,
-             size = 2
+             colour = col_pulse2,
+             fill = col_pulse2_transparent,
+             alpha = 1,
+             shape = shape_pulse_2,
+             size = 2,
+             stroke = 1
              ) +
   labs(x = "Mean Temperature of Pulse (°C)",
        y = "Mean Precipitation of Pulse (mm)") +
   scale_x_continuous(limits = c(-7, 14),
                      breaks = seq(-6, 14, 2)) +
-  scale_y_continuous(limits = c(400, 2600)) +
-  annotate("text", x = 6, y = 2600, 
-           colour = "dodgerblue2", hjust = 0, vjust = 0.4,
+  scale_y_continuous(limits = c(400, 3100),
+                     breaks = seq(0,3000,500)) +
+  annotate("text", x = 6, y = 3100, 
+           colour = "black", hjust = 0, vjust = 0.4, 
            label = "Pulse 1 (14.5-14.3k BP)") +
-  annotate("text", x = 6, y = 2475,
+  annotate("text", x = 6, y = 2950,
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Pulse 2 (14.2-14.1k BP)") +
-  annotate("text", x = 6, y = 2350,
-           colour = "grey60", hjust = 0, vjust = 0.4,
+  annotate("text", x = 6, y = 2800,
+           colour = "black", hjust = 0, vjust = 0.4,
            label = "Uncertain (14.5-14.1k BP)") +
-  annotate("text", x = 6, y = 2225,
-           colour = "lightskyblue2", hjust = 0, vjust = 0.4,
+  annotate("text", x = 6, y = 2650,
+           colour = "black", hjust = 0, vjust = 0.4,
            label = "Backg. Sample (14.5-14.3k BP)") +
-  annotate("text", x = 6, y = 2100,
-           colour = "grey30", hjust = 0, vjust = 0.4,
+  annotate("text", x = 6, y = 2500,
+           colour = "black", hjust = 0, vjust = 0.4,
            label = "Backg. Sample (14.2-14.1k BP)") +
-  annotate("point", x = 5.7, y = 2600, shape = 21, size = 2,
-           colour = "black", fill = "dodgerblue2") +
-  annotate("point", x = 5.7, y = 2475, shape = 21, size = 2,
-           colour = "black", fill = "black") +
-  annotate("point", x = 5.7, y = 2350, shape = 21, size = 2,
-           colour = "black", fill = "grey90") +
-  annotate("point", x = 5.7, y = 2225, shape = 21, size = 2,
-           colour = "black", fill = "dodgerblue2", alpha = 0.25) +
-  annotate("point", x = 5.7, y = 2125, shape = 21, size = 2,
-           colour = "grey30", fill = "grey30", alpha = 0.25) +
+  annotate("point", x = 5.6, y = 3100, shape = shape_pulse_1, size = 2, stroke = 1,
+           colour = col_pulse1, fill = col_pulse1_transparent) +
+  annotate("point", x = 5.6, y = 2950, shape = shape_pulse_2, size = 2, stroke = 1,
+           colour = col_pulse2, fill = col_pulse2_transparent) +
+  annotate("point", x = 5.6, y = 2800, shape = shape_uncertain, size = 3,
+           colour = col_grey_light, fill = col_grey_light) +
+  annotate("point", x = 5.6, y = 2650, shape = 21, size = 2,
+           colour = "grey60", fill = "grey60", alpha = 0.25) +
+  annotate("point", x = 5.6, y = 2500, shape = 21, size = 2,
+           colour = col_grey_dark, fill = col_grey_dark, alpha = 0.25) +
   theme_cowplot(14) 
 save_plot("figures/temp_vs_precip_by_pulse.png",
           temp_vs_precip_plot_by_pulse,
@@ -1314,17 +1344,24 @@ predictions_global_thresh <- predictions_global > model_global[["bioclim_thresh"
 predictions_pulse_1_thresh <- predictions_pulse_1 > model_pulse_1[["bioclim_thresh"]]
 predictions_pulse_2_thresh <- predictions_pulse_2 > model_pulse_2[["bioclim_thresh"]]
 
+predictions_global <- mask(predictions_global, reclassify(predictions_global_thresh, c(-0.1, 0.1, NA)))
+predictions_pulse_1 <- mask(predictions_pulse_1, reclassify(predictions_pulse_1_thresh, c(-0.1, 0.1, NA)))
+predictions_pulse_2 <- mask(predictions_pulse_2, reclassify(predictions_pulse_2_thresh, c(-0.1, 0.1, NA)))
+
 # Visualise predictions
 
 # Define function to visualise predictions
 plot_preds_map <- function(base_raster,
                            main_title,
                            file_name,
-                           palette = "default" ) {
+                           palette = "default",
+                           colour_key = T,
+                           key_at = seq(0,1,0.05)) {
   if(palette[1] == "default"){
     palette <- sequential_hcl(
-      100, 
+      103, 
       "Inferno")
+    palette <- palette[c(-1,-2,-3)]
   }
   png(file_name, 
       width = 6,
@@ -1334,18 +1371,23 @@ plot_preds_map <- function(base_raster,
   print(levelplot(base_raster, 
                   margin = F,
                   main = main_title,
-                  colorkey = F,
+                  colorkey = colour_key,
+                  at = key_at,
                   par.settings = rasterTheme(
-                    region = palette)) +
+                    region = palette),
+                  panel = function(...) {
+                    panel.fill(col = "grey30")
+                    panel.levelplot(...)
+                  }) +
           latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
           latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
           latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
           latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
-                                        col = "grey90", pch = 63, cex = 0.8)) +
+                                        col = col_grey_light, pch = shape_uncertain, cex = 0.8)) +
           latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
-                                        col = "dodgerblue2", pch = 1, cex = 1.05)) +
+                                        col = col_pulse1, fill = col_pulse1_transparent, pch = shape_pulse_1)) +
           latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
-                                        col = "black", pch = 3)) +
+                                        col = col_pulse1, fill = col_pulse2_transparent, pch = shape_pulse_2)) +
           
           latticeExtra::layer({
             centre_x <- 27.5
@@ -1360,21 +1402,23 @@ plot_preds_map <- function(base_raster,
             
             grid.points(#label = "Pulse 1",
               x=centre_x-2.75, y=centre_y+2.5/4,
-              pch = 1,
-              gp=gpar(cex = 0.65,
-                      col = "dodgerblue2"),
+              pch = shape_pulse_1,
+              gp=gpar(cex = 0.45,
+                      col = col_pulse1,
+                      fill = col_pulse1_transparent),
               default.units='native')
             grid.points(#label = "Pulse 2",
               x=centre_x-2.75, y=centre_y,
-              pch = 3,
-              gp=gpar(cex = 0.4,
-                      col = "black"),
+              pch = shape_pulse_2,
+              gp=gpar(cex = 0.45,
+                      col = col_pulse2,
+                      fill = col_pulse2_transparent),
               default.units='native')
             grid.points(#label = "Uncertain",
               x=centre_x-2.75, y=centre_y-2.5/4,
-              pch = 63,
+              pch = shape_uncertain,
               gp=gpar(cex = 0.65,
-                      col = "grey30"),
+                      col = col_grey_dark),
               default.units='native')
             
             grid.text(label = "Pulse 1",
@@ -1408,30 +1452,33 @@ plot_preds_map <- function(base_raster,
 
 # |_ Mean ----
 plot_preds_map(base_raster = predictions_global,
-               main = "Global Model Raw Pred. 14.5k-14.1k BP ", 
+               main = "Global Model Suitability 14.5k-14.1k BP ", 
                file_name = "figures/predictions_global.png")
 plot_preds_map(base_raster = predictions_global_thresh,
                main = "Global Model Pres./Abs. 14.5k-14.1k BP ", 
                file_name = "figures/predictions_global_thresh.png",
-               palette = c("grey30", "#f38f32"))
+               palette = c("grey30", "#f38f32"),
+               colour_key = F)
 
 # |_ Pulse 1----
 plot_preds_map(base_raster = predictions_pulse_1,
-               main = "Pulse 1 Model Raw Pred. 14.5k-14.3k BP ", 
+               main = "Pulse 1 Model Suitability 14.5k-14.3k BP ", 
                file_name = "figures/predictions_pulse_1.png")
 plot_preds_map(base_raster = predictions_pulse_1_thresh,
                main = "Pulse 1 Model Pres./Abs. 14.5k-14.3k BP ", 
                file_name = "figures/predictions_pulse_1_thresh.png",
-               palette = c("grey30", "#f38f32"))
+               palette = c("grey30", "#f38f32"),
+               colour_key = F)
 
 # |_ Pulse 2 ----
 plot_preds_map(base_raster = predictions_pulse_2,
-               main = "Pulse 2 Model Raw. Pred 14.2k-14.1k BP ", 
+               main = "Pulse 2 Model Suitability 14.2k-14.1k BP ", 
                file_name = "figures/predictions_pulse_2.png")
 plot_preds_map(base_raster = predictions_pulse_2_thresh,
                main = "Pulse 2 Model Pres./Abs. 14.2k-14.1k BP ", 
                file_name = "figures/predictions_pulse_2_thresh.png",
-               palette = c("grey30", "#f38f32"))
+               palette = c("grey30", "#f38f32"),
+               colour_key = F)
 
 # 5) Time-Series for Predictions ----
 
@@ -1473,7 +1520,8 @@ predict_time_series <- function(bioclim_model_list, model_name, file_name){
     predictions <- predict(climate_raster,
                            bioclim_model)
     # Apply threshold
-    predictions <- predictions > bioclim_thresh
+    predictions_thresh <- predictions > bioclim_thresh
+    predictions <- mask(predictions, reclassify(predictions_thresh, c(-0.1, 0.1, NA) ))
     
     return(predictions)
   }) %>% setNames(time_range)
@@ -1485,10 +1533,11 @@ predict_time_series <- function(bioclim_model_list, model_name, file_name){
     k_year_bp_end <- formatC(time_range[index] / 10 + 2, 1, format = "f")
     cat(paste0( k_year_bp_start, "-", k_year_bp_end, "k BP\n"))
     plot_preds_map(base_raster = preds_time_series[[index]],
-                   main = paste0(model_name, " Model Pres./Abs. ", k_year_bp_start, "-", k_year_bp_end, "k BP"), 
+                   main = paste0(model_name, " Model Suitability ", k_year_bp_start, "-", k_year_bp_end, "k BP"), 
                    file_name = paste0(out_folder, "/predictions_", 
                                       k_year_bp_start, "-", k_year_bp_end, "k_BP.png"),
-                 palette = c("grey30", "#f38f32"))
+                 #palette = c("grey30", "#f38f32")
+                 )
   })
   
   # Generate Animation
@@ -1503,23 +1552,116 @@ predict_time_series <- function(bioclim_model_list, model_name, file_name){
   img_joined <- image_join(img_list)
   
   # animate at 1 frame per second
-  img_animated <- image_animate(img_joined, fps = 1)
+  img_animated <- image_animate(img_joined, fps = 2)
   
   # Export as gif
   image_write(image = img_animated,
               path = paste0(out_folder, "/preds_time_series_", file_name, ".gif"))
   
   cat(paste0("Done. \n"))
-  return(NULL)
+  return(preds_time_series)
 }
 
 # Generate time-series
-predict_time_series(model_global, "Global", "global")
-predict_time_series(model_pulse_1, "Pulse 1", "pulse_1")
-predict_time_series(model_pulse_2, "Pulse 2", "pulse_2")
+ts_global <- predict_time_series(model_global, "Global", "global")
+ts_pulse_1 <- predict_time_series(model_pulse_1, "Pulse 1", "pulse_1")
+ts_pulse_2 <- predict_time_series(model_pulse_2, "Pulse 2", "pulse_2")
 
 
+# Fragstats ----
+# Prepare time series of thresholded maps converted to an arbitary 
+# reference system with 
+threshold_ts <- function(raw_preds){
+  cat(".")
+  # Reclassify raster
+  reclassed <- reclassify(raw_preds, c(NA, NA, 0, 0,1,1))
+  # Mask land
+  reclassed <-  mask(reclassed, land_for_maps) 
+  # Copy to raster with arbitary reference system in m
+  thresholded <- raster(nrows = nrow(reclassed),
+                       ncols = ncol(reclassed),
+                       xmn = 0,
+                       ymn = 0,
+                       xmx = 1000 * ncol(reclassed),
+                       ymx = 1000 * nrow(reclassed),
+                       vals = getValues(reclassed),
+                       crs = "+proj=longlat +datum=WGS84 +no_defs +units=m"
+                       )
+  return(thresholded)
+}
+ts_global_thresh <- lapply(ts_global, threshold_ts)
+ts_pulse_1_thresh <- lapply(ts_pulse_1, threshold_ts)
+ts_pulse_2_thresh <- lapply(ts_pulse_2, threshold_ts)
 
+# Specify functions to calculate landscape metrics
+calc_lsm <- function(preds_thresholded){
+  cat(".")
+  # Proportion of cells suitable
+  prop_cells <- sum(getValues(preds_thresholded) == 1, na.rm = T) / sum(!is.na(getValues(preds_thresholded)))
+  # Number of patches
+  n_patches <- lsm_l_np(preds_thresholded) %>% pull(value)
+  # Mean patch area
+  patch_area_mean <- lsm_c_area_mn(preds_thresholded) %>% 
+    filter(class == 1) %>%
+    pull(value) * 0.01
+  # Path area sd
+  patch_area_sd <- lsm_c_area_sd(preds_thresholded) %>% 
+    filter(class == 1) %>%
+    pull(value) * 0.01
+  # Nearest neighbour distance
+  mean_nearest_neighbour <- lsm_p_enn(preds_thresholded) %>% 
+    filter(class == 1) %>%
+    pull(value) %>% mean(.) / 1000 
+  # Patch cohesion
+  patch_cohesion <- lsm_c_cohesion(preds_thresholded) %>% 
+    filter(class == 1) %>% pull(value)
+  
+  return(data.frame(prop_cells,
+                    n_patches,
+                    patch_area_mean,
+                    patch_area_sd,
+                    mean_nearest_neighbour,
+                    patch_cohesion))
+}
+
+# Calculate metrics
+# Main predictions
+global_stats <- calc_lsm(threshold_ts(predictions_global))
+pulse_1_stats <- calc_lsm(threshold_ts(predictions_pulse_1))
+pulse_2_stats <- calc_lsm(threshold_ts(predictions_pulse_2))
+stats_all <- bind_rows(global_stats,
+                       pulse_1_stats,
+                       pulse_2_stats) %>%
+  mutate(model = c("Global", "Pulse 1", "Pulse 2"),
+         time = c("14.5k-14.1k BP",
+                  "14.5k-14.3k BP",
+                  "14.2k-14.1k BP")) %>%
+  select(model, time, prop_cells:patch_cohesion)
+names(stats_all) <- c("Model",
+                      "Time-Window",
+                      "Prop. cells suitable",
+                      "Number of Patches",
+                      "Mean Patch Area (km2)",
+                      "Std. Dev. Patch Area (km2)",
+                      "Mean Dist to neares neighbour (km)",
+                      "Patch Cohesion")
+write_csv(stats_all, "tables/landscape_stats.csv")
+
+# Time-series
+ts_global_patch_stats <- bind_rows(lapply(ts_global_thresh, calc_lsm))
+ts_pulse_1_patch_stats <- bind_rows(lapply(ts_pulse_1_thresh, calc_lsm))
+ts_pulse_2_patch_stats <- bind_rows(lapply(ts_pulse_2_thresh, calc_lsm))
+# Add colums for start and end data
+ts_global_patch_stats$start_bp <- formatC(time_range / 10 + 2.1, 1, format = "f")
+ts_global_patch_stats$end_bp <- formatC(time_range / 10 + 2, 1, format = "f")
+ts_pulse_1_patch_stats$start_bp <- formatC(time_range / 10 + 2.1, 1, format = "f")
+ts_pulse_1_patch_stats$end_bp <- formatC(time_range / 10 + 2, 1, format = "f")
+ts_pulse_2_patch_stats$start_bp <- formatC(time_range / 10 + 2.1, 1, format = "f")
+ts_pulse_2_patch_stats$end_bp <- formatC(time_range / 10 + 2, 1, format = "f")
+# Save
+write_csv(ts_global_patch_stats, "tables/landscape_stats_ts_global.csv")
+write_csv(ts_pulse_1_patch_stats, "tables/landscape_stats_ts_pulse_1.csv")
+write_csv(ts_pulse_2_patch_stats, "tables/landscape_stats_ts_pulse_2.csv")
 
 # GEOFACETS playground (experimental) ----
 
