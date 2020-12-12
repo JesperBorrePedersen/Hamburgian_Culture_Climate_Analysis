@@ -1598,6 +1598,16 @@ calc_lsm <- function(preds_thresholded){
   cat(".")
   # Proportion of cells suitable
   prop_cells <- sum(getValues(preds_thresholded) == 1, na.rm = T) / sum(!is.na(getValues(preds_thresholded)))
+  
+  # return NA if prop = 0
+  if(prop_cells == 0) {
+    return(data.frame(prop_cells = NA,
+                      n_patches = NA,
+                      patch_area_mean = NA,
+                      patch_area_sd = NA,
+                      mean_nearest_neighbour = NA,
+                      patch_cohesion = NA))
+  }
   # Number of patches
   n_patches <- lsm_l_np(preds_thresholded) %>% pull(value)
   # Mean patch area
@@ -1651,7 +1661,7 @@ write_csv(stats_all, "tables/landscape_stats.csv")
 ts_global_patch_stats <- bind_rows(lapply(ts_global_thresh, calc_lsm))
 ts_pulse_1_patch_stats <- bind_rows(lapply(ts_pulse_1_thresh, calc_lsm))
 ts_pulse_2_patch_stats <- bind_rows(lapply(ts_pulse_2_thresh, calc_lsm))
-# Add colums for start and end data
+
 ts_global_patch_stats$start_bp <- formatC(time_range / 10 + 2.1, 1, format = "f")
 ts_global_patch_stats$end_bp <- formatC(time_range / 10 + 2, 1, format = "f")
 ts_pulse_1_patch_stats$start_bp <- formatC(time_range / 10 + 2.1, 1, format = "f")
@@ -1662,7 +1672,6 @@ ts_pulse_2_patch_stats$end_bp <- formatC(time_range / 10 + 2, 1, format = "f")
 write_csv(ts_global_patch_stats, "tables/landscape_stats_ts_global.csv")
 write_csv(ts_pulse_1_patch_stats, "tables/landscape_stats_ts_pulse_1.csv")
 write_csv(ts_pulse_2_patch_stats, "tables/landscape_stats_ts_pulse_2.csv")
-
 # GEOFACETS playground (experimental) ----
 
 # Create Grid
