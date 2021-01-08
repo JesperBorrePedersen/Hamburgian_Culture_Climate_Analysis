@@ -24,7 +24,7 @@ rasterOptions(progress = "text")
 col_pulse1 <- "black"
 col_pulse1_transparent <- "#1C87E6FF"
 col_pulse2 <- "black"
-col_pulse2_transparent <- "#9317FCFF"
+col_pulse2_transparent <- "white" # "#9317FCFF"
 col_grey_light <- "#D3D3D3FF"
 col_grey_light_transparent <- "#D3D3D344"
 col_grey_dark <- "#696969FF"
@@ -230,9 +230,13 @@ x_titles <-  c("All Sites\nMean Temp 14.5k-14.1k BP (°C)",
                "All Sites\nMean Precip 14.5k-14.1k BP (mm)",
                "Pulse 1\nMean Precip 14.5k-14.3k BP (mm)",
                "Pulse 2\nMean Precip 14.2k-14.1k BP (mm)")
-colours <- c(rep(c("grey30",
-                   "dodgerblue2",
-                   "black"),
+colours <- c(rep(c("black",
+                col_pulse1,
+                col_pulse2),
+              2))
+fills <- c(rep(c(col_grey_light,
+                   col_pulse1_transparent,
+                   col_pulse2_transparent),
                  2))
 histogram_plots <- lapply(
   seq_along(variables_to_plot),
@@ -248,14 +252,23 @@ histogram_plots <- lapply(
     ggplot(hamburgian_sites) +
       geom_histogram(aes_string(variables_to_plot[index]), 
                      breaks = seq(x_limits[1], x_limits[2], x_step),
-                     fill = colours[index]) +
-      scale_y_continuous(limits = c(0,85)) +
+                     colour = colours[index],
+                     fill = fills[index]) +
+      scale_y_continuous(limits = c(0,85),
+                         sec.axis=sec_axis(~., breaks = NULL),
+                         expand = c(0,0)) +
+      scale_x_continuous(sec.axis=sec_axis(~., breaks = NULL)) +
+      #(sec.axis=sec_axis(~., breaks = NULL))
       labs(x = x_titles[index], y = "Number of Sites") +
-      theme_cowplot(12)
+      theme_cowplot(12) 
   })
 save_plot("figures/climate_histograms.png", 
           plot_grid(plotlist = histogram_plots,
-                    labels = "auto"),
+                    labels = "AUTO"),
+          base_height = 6)
+save_plot("figures/climate_histograms.eps", 
+          plot_grid(plotlist = histogram_plots,
+                    labels = "AUTO"),
           base_height = 6)
 
 # |_ Summary Statistics ----
@@ -404,21 +417,21 @@ temp_plot <- ggplot(temp_df %>% filter(year_BP >= 13000 & year_BP < 15500) %>%
            ymin = -10,
            ymax = 10,
            fill = col_grey_light,
-           colour = "NA",
+           colour = "black",
            alpha = 1) +
   annotate("rect", xmin = 14300,
            xmax = 14500,
            ymin = -9.5,
            ymax = 9.5,
            fill = col_pulse1_transparent,
-           colour = "NA",
+           colour = col_pulse1,
            alpha = 1) +
   annotate("rect", xmin = 14100,
            xmax = 14200,
            ymin = -9.5,
            ymax = 9.5,
            fill = col_pulse2_transparent,
-           colour = "NA",
+           colour = col_pulse2,
            alpha = 1) +
   geom_line(colour = "red3") +
   labs(x = "Year BP", y = "\nAnnual Mean Temp (°C)")  +
@@ -429,13 +442,16 @@ temp_plot <- ggplot(temp_df %>% filter(year_BP >= 13000 & year_BP < 15500) %>%
                                  "14.0k",  "","","","", 
                                  "14.5k",  "","","","", 
                                  "15.0k",  "","","","", 
-                                 "15.5k"))) +
+                                 "15.5k")),
+                  sec.axis=sec_axis(~., breaks = NULL)) +
   scale_y_continuous(limits = c(-10, 10),
-                     breaks = c(-10,-5,0,5,10)) +
+                     breaks = c(-10,-5,0,5,10),
+                     sec.axis=sec_axis(~., breaks = NULL)) +
   theme_cowplot(15) +
   theme(legend.position = "none",
         strip.background = element_rect(fill = NA),
-        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+  )
 
 save_plot("figures/figure1_temp.png",
           temp_plot,
@@ -508,21 +524,21 @@ precip_plot <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP < 15500) %
            ymin = 200,
            ymax = 1200,
            fill = col_grey_light,
-           colour = "NA",
+           colour = "black",
            alpha = 1) +
   annotate("rect", xmin = 14300,
            xmax = 14500,
            ymin = 225,
            ymax = 1175,
            fill = col_pulse1_transparent,
-           colour = "NA",
+           colour = col_pulse1,
            alpha = 1) +
   annotate("rect", xmin = 14100,
            xmax = 14200,
            ymin = 225,
            ymax = 1175,
            fill = col_pulse2_transparent,
-           colour = "NA",
+           colour = col_pulse2,
            alpha = 1) +
   geom_line(colour = "blue") +
   labs(x = "Year BP", y = "\nAnnual Precipitation (mm)") +
@@ -533,9 +549,11 @@ precip_plot <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP < 15500) %
                                  "14.0k",  "","","","", 
                                  "14.5k",  "","","","", 
                                  "15.0k",  "","","","", 
-                                 "15.5k"))) +
+                                 "15.5k")),
+                  sec.axis=sec_axis(~., breaks = NULL)) +
   scale_y_continuous(limits = c(200, 1200),
-                     breaks = seq(200,1200,200)) +
+                     breaks = seq(200,1200,200),
+                     sec.axis=sec_axis(~., breaks = NULL)) +
   scale_colour_discrete_qualitative(palette = "Dark2") +
   theme_cowplot() +
   theme(legend.position = "none",
@@ -550,7 +568,13 @@ save_plot("figures/figure1_precip.png",
 # Temperature and precipitaton combined
 save_plot("figures/temp_precip_time_series.png",
           plot_grid(temp_plot, precip_plot, 
-                    labels = "auto", 
+                    labels = "AUTO", 
+                    align = "v", 
+                    axis = "tb"),
+          base_aspect_ratio = 3.2)
+save_plot("figures/temp_precip_time_series.eps",
+          plot_grid(temp_plot, precip_plot, 
+                    labels = "AUTO", 
                     align = "v", 
                     axis = "tb"),
           base_aspect_ratio = 3.2)
@@ -1021,33 +1045,35 @@ temp_vs_precip_plot <- ggplot() +
              alpha = 1,
              stroke = 1) +
   labs(x = "Mean Temperature 14.5-14.1k BP (°C)",
-       y = "Mean Precipitation 14.5-14.1k BP (mm)") +
+       y = "\nMean Precipitation 14.5-14.1k BP (mm)") +
   scale_x_continuous(limits = c(-4, 12),
-                     breaks = seq(-4, 12, 2)) +
-  scale_y_continuous(limits = c(400, 2600)) +
+                     breaks = seq(-4, 12, 2),
+                     sec.axis=sec_axis(~., breaks = NULL)) +
+  scale_y_continuous(limits = c(400, 2600),
+                     sec.axis=sec_axis(~., breaks = NULL)) +
   scale_colour_manual(values = c(col_grey_light, col_pulse2, col_pulse1)) +
   scale_size_manual(values = c(2.5,2,2)) +
   scale_fill_manual(values = c(col_grey_light_transparent, col_pulse2_transparent, col_pulse1_transparent)) +
   scale_shape_manual(values = c(shape_uncertain, shape_pulse_2, shape_pulse_1)) +
-  annotate("text", x = 8, y = 2600, 
+  annotate("text", x = 9, y = 2600, 
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Pulse 1") +
-  annotate("text", x = 8, y = 2475,
+  annotate("text", x = 9, y = 2475,
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Pulse 2") +
-  annotate("text", x = 8, y = 2350,
+  annotate("text", x = 9, y = 2350,
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Uncertain") +
-  annotate("text", x = 8, y = 2225,
+  annotate("text", x = 9, y = 2225,
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Backg. Sample") +
-  annotate("point", x = 7.7, y = 2600, shape = shape_pulse_1, size = 2, stroke = 1,
+  annotate("point", x = 8.7, y = 2600, shape = shape_pulse_1, size = 2, stroke = 1,
            colour = col_pulse1, fill = col_pulse1_transparent) +
-  annotate("point", x = 7.7, y = 2475, shape = shape_pulse_2, size = 2, stroke = 1,
+  annotate("point", x = 8.7, y = 2475, shape = shape_pulse_2, size = 2, stroke = 1,
            colour = col_pulse2, fill = col_pulse2_transparent) +
-  annotate("point", x = 7.7, y = 2350, shape = shape_uncertain, size = 3, stroke = 1,
+  annotate("point", x = 8.7, y = 2350, shape = shape_uncertain, size = 3, stroke = 1,
            colour = col_grey_light, fill = col_grey_light) +
-  annotate("point", x = 7.7, y = 2225, shape = 21, size = 2,
+  annotate("point", x = 8.7, y = 2225, shape = 21, size = 2,
            colour = col_grey_dark, fill = col_grey_dark, alpha = 0.25) +
   theme_cowplot(14) +
   theme(legend.position = "none")
@@ -1107,35 +1133,37 @@ temp_vs_precip_plot_by_pulse <- ggplot() +
              stroke = 1
              ) +
   labs(x = "Mean Temperature of Pulse (°C)",
-       y = "Mean Precipitation of Pulse (mm)") +
+       y = "\nMean Precipitation of Pulse (mm)") +
   scale_x_continuous(limits = c(-7, 14),
-                     breaks = seq(-6, 14, 2)) +
+                     breaks = seq(-6, 14, 2),
+                     sec.axis=sec_axis(~., breaks = NULL)) +
   scale_y_continuous(limits = c(400, 3100),
-                     breaks = seq(0,3000,500)) +
-  annotate("text", x = 6, y = 3100, 
+                     breaks = seq(0,3000,500),
+                     sec.axis=sec_axis(~., breaks = NULL)) +
+  annotate("text", x = 5.5, y = 3100, 
            colour = "black", hjust = 0, vjust = 0.4, 
            label = "Pulse 1 (14.5-14.3k BP)") +
-  annotate("text", x = 6, y = 2950,
+  annotate("text", x = 5.5, y = 2950,
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Pulse 2 (14.2-14.1k BP)") +
-  annotate("text", x = 6, y = 2800,
+  annotate("text", x = 5.5, y = 2800,
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Uncertain (14.5-14.1k BP)") +
-  annotate("text", x = 6, y = 2650,
+  annotate("text", x = 5.5, y = 2650,
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Backg. Sample (14.5-14.3k BP)") +
-  annotate("text", x = 6, y = 2500,
+  annotate("text", x = 5.5, y = 2500,
            colour = "black", hjust = 0, vjust = 0.4,
            label = "Backg. Sample (14.2-14.1k BP)") +
-  annotate("point", x = 5.6, y = 3100, shape = shape_pulse_1, size = 2, stroke = 1,
+  annotate("point", x = 5.1, y = 3100, shape = shape_pulse_1, size = 2, stroke = 1,
            colour = col_pulse1, fill = col_pulse1_transparent) +
-  annotate("point", x = 5.6, y = 2950, shape = shape_pulse_2, size = 2, stroke = 1,
+  annotate("point", x = 5.1, y = 2950, shape = shape_pulse_2, size = 2, stroke = 1,
            colour = col_pulse2, fill = col_pulse2_transparent) +
-  annotate("point", x = 5.6, y = 2800, shape = shape_uncertain, size = 3,
+  annotate("point", x = 5.1, y = 2800, shape = shape_uncertain, size = 3,
            colour = col_grey_light, fill = col_grey_light) +
-  annotate("point", x = 5.6, y = 2650, shape = 21, size = 2,
+  annotate("point", x = 5.1, y = 2650, shape = 21, size = 2,
            colour = "grey60", fill = "grey60", alpha = 0.25) +
-  annotate("point", x = 5.6, y = 2500, shape = 21, size = 2,
+  annotate("point", x = 5.1, y = 2500, shape = 21, size = 2,
            colour = col_grey_dark, fill = col_grey_dark, alpha = 0.25) +
   theme_cowplot(14) 
 save_plot("figures/temp_vs_precip_by_pulse.png",
@@ -1143,6 +1171,23 @@ save_plot("figures/temp_vs_precip_by_pulse.png",
           base_aspect_ratio = 1.6,
           base_height = 4)
 
+# Panel both figures up into one
+save_plot("figures/temp_vs_precip_both_panels.png",
+          plot_grid(temp_vs_precip_plot, 
+                    temp_vs_precip_plot_by_pulse, 
+                    labels = "AUTO", 
+                    align = "v", 
+                    axis = "tb"),
+          base_aspect_ratio = 3.2,
+          base_height = 4)
+save_plot("figures/temp_vs_precip_both_panels.eps",
+          plot_grid(temp_vs_precip_plot, 
+                    temp_vs_precip_plot_by_pulse, 
+                    labels = "AUTO", 
+                    align = "v", 
+                    axis = "tb"),
+          base_aspect_ratio = 3.2,
+          base_height = 4)
 # 4) BIOCLIM Models ----
 
 # Add cell_id to main geometry to allow for exclusion of multiple samples from
