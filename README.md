@@ -12,13 +12,13 @@ This repository contains the data and code for our paper: _Distribution modellin
 5. [License](##License)
 
 ## Authors
-Jesper Borre Pedersen, Jakob Johan Assmann, Signe Normand, Dirk Karger, Felix Riede.
+Jesper Borre Pedersen, Jakob Johan Assmann, Signe Normand, Dirk Nikolaus Karger, Felix Riede.
 
 Contact: jesper.borre@cas.au.dk
 
 ## Citation
 
-Pedersen, Jesper B., Assmann, Jakob J., Normand, Signe, Karger, Dirk & Felix Riede (xxxx): _Distribution modelling reveals the changing niches of pioneering Late Pleistocene populations in northern Europe_.
+Pedersen, Jesper B., Assmann, Jakob J., Normand, Signe, Karger, Dirk N. & Felix Riede (xxxx): _Distribution modelling reveals the changing niches of pioneering Late Pleistocene populations in northern Europe_.
 
 ## Acknowledgements
 (from the manuscript)
