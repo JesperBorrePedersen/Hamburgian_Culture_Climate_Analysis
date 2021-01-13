@@ -27,9 +27,11 @@ Jesper B. Pedersen would like to thank the University of Aarhus for granting a P
 
 Felix Riede’s contribution to this paper is part of CLIOARCH, an ERC Consolidator Grant project that has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No. 817564).
 
-## Software
+## Getting Started
 
-## Folder Structure
+### Software
+
+### Folder Structure
 ```
 ├── data       
 ├── figures
