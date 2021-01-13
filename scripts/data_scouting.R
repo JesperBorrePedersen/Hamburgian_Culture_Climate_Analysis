@@ -978,7 +978,7 @@ temp_legend <- levelplot(hamburgian_mean_temp,
               gp=gpar(cex=0.5,
                       col = "black"),
               default.units='native')
-    grid.text(label = "Pusle 2",
+    grid.text(label = "Pulse 2",
               x=centre_x-1.75, y=centre_y,
               #just = "left",
               hjust = 0,
@@ -996,7 +996,7 @@ temp_legend <- levelplot(hamburgian_mean_temp,
               default.units='native')
   })
 # Export to file
-png("figures/temp_legend.png", 
+png("figures/helper_figures/temp_legend.png", 
     width = 5,
     height = 3/6*5,
     units = "in",
@@ -1007,9 +1007,9 @@ print(temp_legend)
 dev.off()
 
 # Cut out legend
-temp_legend <- image_read("figures/temp_legend.png")
+temp_legend <- image_read("figures/helper_figures/temp_legend.png")
 temp_legend <- image_crop(temp_legend, "263x152+1211+70")
-image_write(temp_legend, "figures/temp_legend.png") 
+image_write(temp_legend, "figures/helper_figures/temp_legend.png") 
 temp_legend <- ggdraw() + draw_image(temp_legend,
                                      x = 0.44,
                                      y = 0.6,
@@ -1245,7 +1245,7 @@ precip_legend <- levelplot(hamburgian_mean_precip,
               gp=gpar(cex=0.5,
                       col = "black"),
               default.units='native')
-    grid.text(label = "Pusle 2",
+    grid.text(label = "Pulse 2",
               x=centre_x-1.75, y=centre_y,
               #just = "left",
               hjust = 0,
@@ -1263,7 +1263,7 @@ precip_legend <- levelplot(hamburgian_mean_precip,
               default.units='native')
   })
 # Export to file
-png("figures/precip_legend.png", 
+png("figures/helper_figures/precip_legend.png", 
     width = 5,
     height = 3/6*5,
     units = "in",
@@ -1274,9 +1274,9 @@ print(precip_legend)
 dev.off()
 
 # Cut out legend
-precip_legend <- image_read("figures/precip_legend.png")
+precip_legend <- image_read("figures/helper_figures/precip_legend.png")
 precip_legend <- image_crop(precip_legend, "263x152+1211+70")
-image_write(precip_legend, "figures/precip_legend.png") 
+image_write(precip_legend, "figures/helper_figures/precip_legend.png") 
 precip_legend <- ggdraw() + draw_image(precip_legend,
                                        x = 0.44,
                                        y = 0.6,
