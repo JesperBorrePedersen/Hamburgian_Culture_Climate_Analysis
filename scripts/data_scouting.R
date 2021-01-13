@@ -434,21 +434,23 @@ temp_plot <- ggplot(temp_df %>% filter(year_BP >= 13000 & year_BP < 15500) %>%
            colour = col_pulse2,
            alpha = 1) +
   geom_line(colour = "red3") +
-  labs(x = "Year BP", y = "\nAnnual Mean Temp (°C)")  +
+  labs(x = "kyr BP", y = "")  +
   scale_x_reverse(limits = c(15500, 13000),
                   breaks = seq(15500, 13000, -100),
-                  labels = rev(c("13.0k", "","","","", 
-                                 "13.5k",  "","","","", 
-                                 "14.0k",  "","","","", 
-                                 "14.5k",  "","","","", 
-                                 "15.0k",  "","","","", 
-                                 "15.5k")),
+                  labels = rev(c("13.0", "","","","", 
+                                 "13.5",  "","","","", 
+                                 "14.0",  "","","","", 
+                                 "14.5",  "","","","", 
+                                 "15.0",  "","","","", 
+                                 "15.5")),
                   sec.axis=sec_axis(~., breaks = NULL)) +
   scale_y_continuous(limits = c(-10, 10),
                      breaks = c(-10,-5,0,5,10),
+                     #labels = c("-10 °C", "-5 °C", "0 °C", "5 °C", "10 °C"),
                      sec.axis=sec_axis(~., breaks = NULL)) +
-  theme_cowplot(15) +
+  theme_cowplot(10) +
   theme(legend.position = "none",
+        plot.margin = margin(5,16,5,4),
         strip.background = element_rect(fill = NA),
         axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
   )
@@ -541,22 +543,24 @@ precip_plot <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP < 15500) %
            colour = col_pulse2,
            alpha = 1) +
   geom_line(colour = "blue") +
-  labs(x = "Year BP", y = "\nAnnual Precipitation (mm)") +
+  labs(x = "kyr BP", y = "") +
   scale_x_reverse(limits = c(15500, 13000),
                   breaks = seq(15500, 13000, -100),
-                  labels = rev(c("13.0k", "","","","", 
-                                 "13.5k",  "","","","", 
-                                 "14.0k",  "","","","", 
-                                 "14.5k",  "","","","", 
-                                 "15.0k",  "","","","", 
-                                 "15.5k")),
+                  labels = rev(c("13.0", "","","","", 
+                                 "13.5",  "","","","", 
+                                 "14.0",  "","","","", 
+                                 "14.5",  "","","","", 
+                                 "15.0",  "","","","", 
+                                 "15.5")),
                   sec.axis=sec_axis(~., breaks = NULL)) +
   scale_y_continuous(limits = c(200, 1200),
                      breaks = seq(200,1200,200),
+                     #labels = paste0(seq(200,1200,200), " mm"),
                      sec.axis=sec_axis(~., breaks = NULL)) +
   scale_colour_discrete_qualitative(palette = "Dark2") +
-  theme_cowplot() +
+  theme_cowplot(10) +
   theme(legend.position = "none",
+        plot.margin = margin(5,16,5,4),
         strip.background = element_rect(fill = NA),
         axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
@@ -763,100 +767,255 @@ plot_ham_temp_map <- function(base_raster,
                               file_name){
   cat(paste0("Plotting ", file_name, "...\n"))
   
+  # Create plot object
+  map_plot <- levelplot(get(base_raster, envir = .GlobalEnv), 
+                        margin = F,
+                        main = main_title,
+                        at = seq(-12, 12, 1),
+                        colorkey = F,
+                        xlab = NULL,
+                        ylab = NULL,
+                        scales =list(draw = F),
+                        par.settings = rasterTheme(
+                          layout.widths = list(left.padding=-1,
+                                               right.padding=-1),
+                          layout.heights = list(top.padding=-1, 
+                                                bottom.padding=-1))) +
+    latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
+    latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
+    latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
+    latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
+                                  col = "white", pch = shape_uncertain, cex = 0.8)) +
+    latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
+                                  col = col_pulse1, fill = col_pulse1_transparent, pch = shape_pulse_1)) +
+    latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
+                                  col = col_pulse2, fill = col_pulse2_transparent, pch = shape_pulse_2)) # +
+    # 
+    # latticeExtra::layer({
+    #   centre_x <- 27.5
+    #   centre_y <- 58.3
+    #   grid.rect(x=centre_x, y=centre_y,
+    #             width=7.5, height=2.5,
+    #             gp=gpar(fill="white",
+    #                     col = "black",
+    #                     alpha = 0.9),
+    #             default.units='native')
+    #   
+    #   
+    #   grid.points(#label = "Pulse 1",
+    #     x=centre_x-2.75, y=centre_y+2.5/4,
+    #     pch = shape_pulse_1,
+    #     gp=gpar(cex = 0.45,
+    #             col = col_pulse1,
+    #             fill = col_pulse1_transparent),
+    #     default.units='native')
+    #   grid.points(#label = "Pulse 2",
+    #     x=centre_x-2.75, y=centre_y,
+    #     pch = shape_pulse_2,
+    #     gp=gpar(cex = 0.45,
+    #             col = col_pulse2,
+    #             fill = col_pulse2_transparent),
+    #     default.units='native')
+    #   grid.points(#label = "Uncertain",
+    #     x=centre_x-2.75, y=centre_y-2.5/4,
+    #     pch = shape_uncertain,
+    #     gp=gpar(cex = 0.65,
+    #             col = col_grey_dark),
+    #     default.units='native')
+    #   
+    #   grid.text(label = "Pulse 1",
+    #             x=centre_x-1.75, y=centre_y+2.5/4,
+    #             #just = "left",
+    #             hjust = 0,
+    #             vjust = 0.4,
+    #             gp=gpar(cex=0.5,
+    #                     col = "black"),
+    #             default.units='native')
+    #   grid.text(label = "Pusle 2",
+    #             x=centre_x-1.75, y=centre_y,
+    #             #just = "left",
+    #             hjust = 0,
+    #             vjust = 0.4,
+    #             gp=gpar(cex=0.5,
+    #                     col = "black"),
+    #             default.units='native')
+    #   grid.text(label = "Uncertain",
+    #             x=centre_x-1.75, y=centre_y-2.5/4,
+    #             #just = "left",
+    #             hjust = 0,
+    #             vjust = 0.4,
+    #             gp=gpar(cex=0.5,
+    #                     col = "black"),
+    #             default.units='native')
+    # })
+  # Export to file
   png(file_name, 
       width = 6,
       height = 3,
       units = "in",
       res = 300)
-  print(levelplot(get(base_raster, envir = .GlobalEnv), 
-                  margin = F,
-                  main = main_title,
-                  at = seq(-12, 12, 1)) +
-          latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
-          latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
-          latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
-          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
-                                        col = "white", pch = shape_uncertain, cex = 0.8)) +
-          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
-                                        col = col_pulse1, fill = col_pulse1_transparent, pch = shape_pulse_1)) +
-          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
-                                        col = col_pulse2, fill = col_pulse2_transparent, pch = shape_pulse_2)) +
-          
-          latticeExtra::layer({
-            centre_x <- 27.5
-            centre_y <- 58.3
-            grid.rect(x=centre_x, y=centre_y,
-                      width=7.5, height=2.5,
-                      gp=gpar(fill="white",
-                              col = "black",
-                              alpha = 0.9),
-                      default.units='native')
-            
-            
-            grid.points(#label = "Pulse 1",
-              x=centre_x-2.75, y=centre_y+2.5/4,
-              pch = shape_pulse_1,
-              gp=gpar(cex = 0.45,
-                      col = col_pulse1,
-                      fill = col_pulse1_transparent),
-              default.units='native')
-            grid.points(#label = "Pulse 2",
-              x=centre_x-2.75, y=centre_y,
-              pch = shape_pulse_2,
-              gp=gpar(cex = 0.45,
-                      col = col_pulse2,
-                      fill = col_pulse2_transparent),
-              default.units='native')
-            grid.points(#label = "Uncertain",
-              x=centre_x-2.75, y=centre_y-2.5/4,
-              pch = shape_uncertain,
-              gp=gpar(cex = 0.65,
-                      col = col_grey_dark),
-              default.units='native')
-            
-            grid.text(label = "Pulse 1",
-                      x=centre_x-1.75, y=centre_y+2.5/4,
-                      #just = "left",
-                      hjust = 0,
-                      vjust = 0.4,
-                      gp=gpar(cex=0.5,
-                              col = "black"),
-                      default.units='native')
-            grid.text(label = "Pusle 2",
-                      x=centre_x-1.75, y=centre_y,
-                      #just = "left",
-                      hjust = 0,
-                      vjust = 0.4,
-                      gp=gpar(cex=0.5,
-                              col = "black"),
-                      default.units='native')
-            grid.text(label = "Uncertain",
-                      x=centre_x-1.75, y=centre_y-2.5/4,
-                      #just = "left",
-                      hjust = 0,
-                      vjust = 0.4,
-                      gp=gpar(cex=0.5,
-                              col = "black"),
-                      default.units='native')
-          }))
+  print(map_plot)
   dev.off()
-  return("Done.")
+  return(map_plot)
 }
 
+# |__ Maps ----
+
 # Mean temperature map 14.5k-14.1k BP
-plot_ham_temp_map(base_raster = "hamburgian_mean_temp",
-                  main_title = "Mean Temperature 14.5k-14.1k BP (°C)",
+temp_map_global <- plot_ham_temp_map(base_raster = "hamburgian_mean_temp",
+                  main_title = NULL, #"Mean Temperature 14.5k-14.1k BP (°C)",
                   file_name = "figures/mean_temp.png")
 # Mean temperature map Pulse 1 14.5k-14.3k BP
-plot_ham_temp_map(base_raster = "hamburgian_mean_temp_pulse_1",
-                  main_title = "Mean Temperature 14.5k-14.3k BP (°C)",
+temp_map_pulse1 <- plot_ham_temp_map(base_raster = "hamburgian_mean_temp_pulse_1",
+                  main_title = NULL, #"Mean Temperature 14.5k-14.3k BP (°C)",
                   file_name = "figures/mean_temp_pulse_1.png")
 
 # Mean temperature map Pulse 2 14.2k-14.1k BP
-plot_ham_temp_map(base_raster = "hamburgian_mean_temp_pulse_2",
-                  main_title = "Mean Temperature 14.2k-14.1k BP (°C)",
+temp_map_pulse2 <- plot_ham_temp_map(base_raster = "hamburgian_mean_temp_pulse_2",
+                  main_title = NULL, #"Mean Temperature 14.2k-14.1k BP (°C)",
                   file_name = "figures/mean_temp_pulse_2.png")
 
+# Plot legend components for alter use
+# |__ Colourkey ----
+temp_scale <- levelplot(hamburgian_mean_temp, 
+                        margin = F,
+                        main = NULL,
+                        at = seq(-12, 12, 1),
+                        colorkey = list(space="bottom", labels = list(cex = 0.5)),
+                        xlab = NULL,
+                        ylab = NULL,
+                        scales =list(draw = F),
+                        par.settings = rasterTheme(
+                          layout.widths = list(left.padding=0.5,
+                                               right.padding=0.5),
+                          layout.heights = list(top.padding=-1, 
+                                                bottom.padding=-1))) 
+
+# Export to file
+png("figures/temp_scale.png", 
+    width = 1.5,
+    height = 3,
+    units = "in",
+    res = 300,
+    type = "cairo",
+    antialias = "none")
+print(temp_scale)
+dev.off()
+
+# Cut out scale
+temp_scale <- image_read("figures/temp_scale.png")
+temp_scale <- image_crop(temp_scale, "450x180+0+480")
+image_write(temp_scale, "figures/temp_scale.png") 
+temp_scale <- ggdraw() + draw_image(temp_scale,
+                                    x = -0.105,
+                                    y = 0.5,
+                                    hjust = 0,
+                                    vjust = 0.5,
+                                    scale = 1)
+temp_scale
+# |__ Legend ----
+temp_legend <- levelplot(hamburgian_mean_temp, 
+                         margin = F,
+                         main = NULL,
+                         at = seq(-12, 12, 1),
+                         colorkey = F,
+                         xlab = NULL,
+                         ylab = NULL,
+                         scales =list(draw = F),
+                         par.settings = rasterTheme(
+                           layout.widths = list(left.padding=-1,
+                                                right.padding=-1),
+                           layout.heights = list(top.padding=-1, 
+                                                 bottom.padding=-1))) +
+  latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
+  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
+  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
+  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
+                                col = "white", pch = shape_uncertain, cex = 0.8)) +
+  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
+                                col = col_pulse1, fill = col_pulse1_transparent, pch = shape_pulse_1)) +
+  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
+                                col = col_pulse2, fill = col_pulse2_transparent, pch = shape_pulse_2)) +
+  latticeExtra::layer({
+    centre_x <- 27.5
+    centre_y <- 58.3
+    grid.rect(x=centre_x, y=centre_y,
+              width=7.5, height=2.5,
+              gp=gpar(fill="white",
+                      col = "black",
+                      alpha = 1),
+              default.units='native')
+    
+    
+    grid.points(#label = "Pulse 1",
+      x=centre_x-2.75, y=centre_y+2.5/4,
+      pch = shape_pulse_1,
+      gp=gpar(cex = 0.45,
+              col = col_pulse1,
+              fill = col_pulse1_transparent),
+      default.units='native')
+    grid.points(#label = "Pulse 2",
+      x=centre_x-2.75, y=centre_y,
+      pch = shape_pulse_2,
+      gp=gpar(cex = 0.45,
+              col = col_pulse2,
+              fill = col_pulse2_transparent),
+      default.units='native')
+    grid.points(#label = "Uncertain",
+      x=centre_x-2.75, y=centre_y-2.5/4,
+      pch = shape_uncertain,
+      gp=gpar(cex = 0.65,
+              col = col_grey_dark),
+      default.units='native')
+    
+    grid.text(label = "Pulse 1",
+              x=centre_x-1.75, y=centre_y+2.5/4,
+              #just = "left",
+              hjust = 0,
+              vjust = 0.4,
+              gp=gpar(cex=0.5,
+                      col = "black"),
+              default.units='native')
+    grid.text(label = "Pusle 2",
+              x=centre_x-1.75, y=centre_y,
+              #just = "left",
+              hjust = 0,
+              vjust = 0.4,
+              gp=gpar(cex=0.5,
+                      col = "black"),
+              default.units='native')
+    grid.text(label = "Uncertain",
+              x=centre_x-1.75, y=centre_y-2.5/4,
+              #just = "left",
+              hjust = 0,
+              vjust = 0.4,
+              gp=gpar(cex=0.5,
+                      col = "black"),
+              default.units='native')
+  })
+# Export to file
+png("figures/temp_legend.png", 
+    width = 5,
+    height = 3/6*5,
+    units = "in",
+    res = 300,
+    type = "cairo",
+    antialias = "none")
+print(temp_legend)
+dev.off()
+
+# Cut out legend
+temp_legend <- image_read("figures/temp_legend.png")
+temp_legend <- image_crop(temp_legend, "263x152+1211+70")
+image_write(temp_legend, "figures/temp_legend.png") 
+temp_legend <- ggdraw() + draw_image(temp_legend,
+                                     x = 0.44,
+                                     y = 0.6,
+                                     hjust = 0.5,
+                                     vjust = 0.5,
+                                     scale = 0.75)
+
+temp_legend
 # |_ Precip Maps ----
 
 # Define Function to plot precip map
@@ -865,103 +1024,263 @@ plot_ham_precip_map <- function(base_raster,
                               file_name){
   cat(paste0("Plotting ", file_name, "...\n"))
 
+  # Create plot object
+  map_plot <- levelplot(get(base_raster, envir = .GlobalEnv), 
+                        margin = F,
+                        main = main_title,
+                        at = seq(0, 2500, 2500/20),
+                        colorkey = F,
+                        xlab = NULL,
+                        ylab = NULL,
+                        scales = list(draw = F),
+                        par.settings = rasterTheme(
+                          region = sequential_hcl(
+                            100, 
+                            "Blues",
+                            rev = T),
+                          
+                          layout.widths = list(left.padding=-1,
+                                               right.padding=-1),
+                          layout.heights = list(top.padding=-1, 
+                                                bottom.padding=-1))) + 
+    latticeExtra::layer(sp.polygons(land_for_maps, col = "white", alpha = 1)) +
+    latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
+    latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
+    latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
+                                  col = col_grey_dark, pch = shape_uncertain, cex = 0.8)) +
+    latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
+                                  col = col_pulse1, fill = col_pulse1_transparent, pch = shape_pulse_1)) +
+    latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
+                                  col = col_pulse2, fill = col_pulse2_transparent, pch = shape_pulse_2)) # +
+    # latticeExtra::layer({
+    #   centre_x <- 27.5
+    #   centre_y <- 58.3
+    #   grid.rect(x=centre_x, y=centre_y,
+    #             width=7.5, height=2.5,
+    #             gp=gpar(fill="white", 
+    #                     col = "black",
+    #                     alpha = 0.9),
+    #             default.units='native')
+    #   
+    #   grid.points(#label = "Hamburgian",
+    #     x=centre_x-2.75, y=centre_y+2.5/4,
+    #     pch = shape_pulse_1,
+    #     gp=gpar(cex = 0.45, 
+    #             col = col_pulse1,
+    #             fill = col_pulse1_transparent),
+    #     default.units='native')
+    #   grid.points(#label = "Havelte Group",
+    #     x=centre_x-2.75, y=centre_y,
+    #     pch = shape_pulse_2,
+    #     gp=gpar(cex = 0.44, 
+    #             col = col_pulse2,
+    #             fill = col_pulse2_transparent),
+    #     default.units='native')
+    #   grid.points(#label = "Possibly Ham.",
+    #     x=centre_x-2.75, y=centre_y-2.5/4,
+    #     pch = 63,
+    #     gp=gpar(cex = 0.65, 
+    #             col = col_grey_dark),
+    #     default.units='native')
+    #   
+    #   grid.text(label = "Pulse 1",
+    #             x=centre_x-1.75, y=centre_y+2.5/4,
+    #             #just = "left",
+    #             hjust = 0,
+    #             vjust = 0.4,
+    #             gp=gpar(cex=0.5, 
+    #                     col = "black"),
+    #             default.units='native')
+    #   grid.text(label = "Pulse 2",
+    #             x=centre_x-1.75, y=centre_y,
+    #             #just = "left",
+    #             hjust = 0,
+    #             vjust = 0.4,
+    #             gp=gpar(cex=0.5, 
+    #                     col = "black"),
+    #             default.units='native')
+    #   grid.text(label = "Uncertain",
+    #             x=centre_x-1.75, y=centre_y-2.5/4,
+    #             #just = "left",
+    #             hjust = 0,
+    #             vjust = 0.4,
+    #             gp=gpar(cex=0.5, 
+    #                     col = "black"),
+    #             default.units='native')
+    # })
   png(file_name, 
       width = 6,
       height = 3,
       units = "in",
       res = 300)
-  print(levelplot(get(base_raster, envir = .GlobalEnv), 
-                  margin = F,
-                  main = main_title,
-                  at = seq(0, 2500, 2500/20),
-                  par.settings = rasterTheme(
-                    region = sequential_hcl(
-                      100, 
-                      "Blues",
-                      rev = T))) + 
-          latticeExtra::layer(sp.polygons(land_for_maps, col = "white", alpha = 1)) +
-          latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
-          latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
-          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
-                                        col = col_grey_dark, pch = shape_uncertain, cex = 0.8)) +
-          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
-                                        col = col_pulse1, fill = col_pulse1_transparent, pch = shape_pulse_1)) +
-          latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
-                                        col = col_pulse2, fill = col_pulse2_transparent, pch = shape_pulse_2)) +
-          latticeExtra::layer({
-            centre_x <- 27.5
-            centre_y <- 58.3
-            grid.rect(x=centre_x, y=centre_y,
-                      width=7.5, height=2.5,
-                      gp=gpar(fill="white", 
-                              col = "black",
-                              alpha = 0.9),
-                      default.units='native')
-            
-            grid.points(#label = "Hamburgian",
-              x=centre_x-2.75, y=centre_y+2.5/4,
-              pch = shape_pulse_1,
-              gp=gpar(cex = 0.45, 
-                      col = col_pulse1,
-                      fill = col_pulse1_transparent),
-              default.units='native')
-            grid.points(#label = "Havelte Group",
-              x=centre_x-2.75, y=centre_y,
-              pch = shape_pulse_2,
-              gp=gpar(cex = 0.44, 
-                      col = col_pulse2,
-                      fill = col_pulse2_transparent),
-              default.units='native')
-            grid.points(#label = "Possibly Ham.",
-              x=centre_x-2.75, y=centre_y-2.5/4,
-              pch = 63,
-              gp=gpar(cex = 0.65, 
-                      col = col_grey_dark),
-              default.units='native')
-            
-            grid.text(label = "Pulse 1",
-                      x=centre_x-1.75, y=centre_y+2.5/4,
-                      #just = "left",
-                      hjust = 0,
-                      vjust = 0.4,
-                      gp=gpar(cex=0.5, 
-                              col = "black"),
-                      default.units='native')
-            grid.text(label = "Pulse 2",
-                      x=centre_x-1.75, y=centre_y,
-                      #just = "left",
-                      hjust = 0,
-                      vjust = 0.4,
-                      gp=gpar(cex=0.5, 
-                              col = "black"),
-                      default.units='native')
-            grid.text(label = "Uncertain",
-                      x=centre_x-1.75, y=centre_y-2.5/4,
-                      #just = "left",
-                      hjust = 0,
-                      vjust = 0.4,
-                      gp=gpar(cex=0.5, 
-                              col = "black"),
-                      default.units='native')
-          }))
-        dev.off()
+  print(map_plot)
+  dev.off()
+  return(map_plot)
 }
 
+# |__ Maps ----
 # Mean preciptation map 14.5k-14.1k BP
-plot_ham_precip_map(base_raster = "hamburgian_mean_precip",
-                  main_title = "Mean Precipitation 14.5k-14.1k BP (mm)",
+precip_map_global <- plot_ham_precip_map(base_raster = "hamburgian_mean_precip",
+                  main_title = NULL, # "Mean Precipitation 14.5k-14.1k BP (mm)",
                   file_name = "figures/mean_precip.png")
 
 # Mean preciptation map 14.5k-14.3k BP
-plot_ham_precip_map(base_raster = "hamburgian_mean_precip_pulse_1",
-                    main_title = "Mean Precipitation 14.5k-14.3k BP (mm)",
+precip_map_pulse1 <- plot_ham_precip_map(base_raster = "hamburgian_mean_precip_pulse_1",
+                    main_title = NULL, #  "Mean Precipitation 14.5k-14.3k BP (mm)",
                     file_name = "figures/mean_precip_pulse_1.png")
 
-
 # Mean preciptation map 14.2k-14.1k BP
-plot_ham_precip_map(base_raster = "hamburgian_mean_precip_pulse_2",
-                    main_title = "Mean Precipitation 14.2k-14.1k BP (mm)",
+precip_map_pulse2 <- plot_ham_precip_map(base_raster = "hamburgian_mean_precip_pulse_2",
+                    main_title = NULL, #  "Mean Precipitation 14.2k-14.1k BP (mm)",
                     file_name = "figures/mean_precip_pulse_2.png")
+
+# Plot legend components for alter use
+# |__ Colourkey ----
+precip_scale <-  levelplot(hamburgian_mean_precip, 
+                           margin = F,
+                           main = NULL,
+                           at = seq(0, 2500, 2500/20),
+                           colorkey = list(space="bottom", labels = list(cex = 0.5)),
+                           xlab = NULL,
+                           ylab = NULL,
+                           scales = list(draw = F),
+                           par.settings = rasterTheme(
+                             region = sequential_hcl(
+                               100, 
+                               "Blues",
+                               rev = T),
+                             
+                             layout.widths = list(left.padding=0.5,
+                                                  right.padding=0.5),
+                             layout.heights = list(top.padding=-1, 
+                                                   bottom.padding=-1)))
+
+# Export to file
+png("figures/precip_scale.png", 
+    width = 1.5,
+    height = 3,
+    units = "in",
+    res = 300,
+    type = "cairo",
+    antialias = "none",
+    )
+print(precip_scale)
+dev.off()
+
+# Cut out scale
+precip_scale <- image_read("figures/precip_scale.png")
+precip_scale <- image_crop(precip_scale, "450x180+0+480")
+image_write(precip_scale, "figures/precip_scale.png") 
+precip_scale <- ggdraw() + draw_image(precip_scale,
+                                      x = -0.105,
+                                      y = 0.5,
+                                      hjust = 0,
+                                      vjust = 0.5,
+                                      scale = 1)
+
+
+# |__ Legend ----
+precip_legend <- levelplot(hamburgian_mean_precip,
+                           margin = F,
+                           main = NULL,
+                           at = seq(-12, 12, 1),
+                           colorkey = F,
+                           xlab = NULL,
+                           ylab = NULL,
+                           scales =list(draw = F),
+                           par.settings = rasterTheme(
+                             layout.widths = list(left.padding=-1,
+                                                  right.padding=-1),
+                             layout.heights = list(top.padding=-1, 
+                                                   bottom.padding=-1))) +
+  latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
+  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
+  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
+  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
+                                col = "white", pch = shape_uncertain, cex = 0.8)) +
+  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
+                                col = col_pulse1, fill = col_pulse1_transparent, pch = shape_pulse_1)) +
+  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
+                                col = col_pulse2, fill = col_pulse2_transparent, pch = shape_pulse_2)) +
+  
+  latticeExtra::layer({
+    centre_x <- 27.5
+    centre_y <- 58.3
+    grid.rect(x=centre_x, y=centre_y,
+              width=7.5, height=2.5,
+              gp=gpar(fill="white",
+                      col = "black",
+                      alpha = 1),
+              default.units='native')
+    
+    
+    grid.points(#label = "Pulse 1",
+      x=centre_x-2.75, y=centre_y+2.5/4,
+      pch = shape_pulse_1,
+      gp=gpar(cex = 0.45,
+              col = col_pulse1,
+              fill = col_pulse1_transparent),
+      default.units='native')
+    grid.points(#label = "Pulse 2",
+      x=centre_x-2.75, y=centre_y,
+      pch = shape_pulse_2,
+      gp=gpar(cex = 0.45,
+              col = col_pulse2,
+              fill = col_pulse2_transparent),
+      default.units='native')
+    grid.points(#label = "Uncertain",
+      x=centre_x-2.75, y=centre_y-2.5/4,
+      pch = shape_uncertain,
+      gp=gpar(cex = 0.65,
+              col = col_grey_dark),
+      default.units='native')
+    
+    grid.text(label = "Pulse 1",
+              x=centre_x-1.75, y=centre_y+2.5/4,
+              #just = "left",
+              hjust = 0,
+              vjust = 0.4,
+              gp=gpar(cex=0.5,
+                      col = "black"),
+              default.units='native')
+    grid.text(label = "Pusle 2",
+              x=centre_x-1.75, y=centre_y,
+              #just = "left",
+              hjust = 0,
+              vjust = 0.4,
+              gp=gpar(cex=0.5,
+                      col = "black"),
+              default.units='native')
+    grid.text(label = "Uncertain",
+              x=centre_x-1.75, y=centre_y-2.5/4,
+              #just = "left",
+              hjust = 0,
+              vjust = 0.4,
+              gp=gpar(cex=0.5,
+                      col = "black"),
+              default.units='native')
+  })
+# Export to file
+png("figures/precip_legend.png", 
+    width = 5,
+    height = 3/6*5,
+    units = "in",
+    res = 300,
+    type = "cairo",
+    antialias = "none")
+print(precip_legend)
+dev.off()
+
+# Cut out legend
+precip_legend <- image_read("figures/precip_legend.png")
+precip_legend <- image_crop(precip_legend, "263x152+1211+70")
+image_write(precip_legend, "figures/precip_legend.png") 
+precip_legend <- ggdraw() + draw_image(precip_legend,
+                                       x = 0.44,
+                                       y = 0.6,
+                                       hjust = 0.5,
+                                       vjust = 0.5,
+                                       scale = 0.75)
 
 # 3) Temp vs. Precip Plot ---- 
 
@@ -1613,7 +1932,7 @@ ts_pulse_1 <- predict_time_series(model_pulse_1, "Pulse 1", "pulse_1")
 ts_pulse_2 <- predict_time_series(model_pulse_2, "Pulse 2", "pulse_2")
 
 
-# Fragstats ----
+# 6) Fragstats ----
 # Prepare time series of thresholded maps converted to an arbitary 
 # reference system with 
 threshold_ts <- function(raw_preds){
@@ -1717,6 +2036,95 @@ ts_pulse_2_patch_stats$end_bp <- formatC(time_range / 10 + 2, 1, format = "f")
 write_csv(ts_global_patch_stats, "tables/landscape_stats_ts_global.csv")
 write_csv(ts_pulse_1_patch_stats, "tables/landscape_stats_ts_pulse_1.csv")
 write_csv(ts_pulse_2_patch_stats, "tables/landscape_stats_ts_pulse_2.csv")
+
+# 7) Final Figures ----
+
+# |_ Figure 1 - Histograms & Points ----
+
+
+# |_ Figure 2 - Climate Context ----
+# List of plots by row
+plot_list <- c("temp_plot", "precip_plot",
+               "temp_map_global", "precip_map_global",
+               "temp_map_pulse1", "precip_map_pulse1",
+               "temp_map_pulse2", "precip_map_pulse2")
+
+# Check all object exist
+lapply(plot_list, function(x) exists(x))
+
+# Helper function to add standardised title to plot
+add_title <- function(plot, title, face = "plain", font_size = 8, 
+                      rel_height = 0.075, top_margin = 4, left_margin = 15.5){
+  title_panel <- ggdraw() + 
+    draw_label(
+      title,
+      fontface = face,
+      x = 0,
+      hjust = 0,
+      size = font_size
+    ) +
+    theme(
+      # add margin on the left of the drawing canvas,
+      # so title is aligned with left edge of first plot
+      plot.margin = margin(top_margin, 0, 0, left_margin)
+    )
+  plot_with_title <- plot_grid(
+    title_panel, plot,
+    ncol = 1,
+    rel_heights = c(rel_height, 1)
+  )
+  return(plot_with_title)
+}
+
+# Prepare legend panels for the bottom
+temp_legend_panel <- plot_grid(add_title(temp_scale, 
+                                         "Mean Annual Temperature (°C)",
+                                         "plain",
+                                         8,
+                                         rel_height = 0.2,
+                                         top_margin = 0,
+                                         left_margin = 15.5),
+                               temp_legend,
+                               rel_widths = c(0.66,0.33))
+precip_legend_panel <- plot_grid(add_title(precip_scale, 
+                                         "Mean Annual Precipitation (mm)",
+                                         "plain",
+                                         8,
+                                         rel_height = 0.2,
+                                         top_margin = 0,
+                                         left_margin = 15.5),
+                               precip_legend,
+                               rel_widths = c(0.66,0.33))
+figure_2 <- plot_grid(
+  plotlist = list(add_title(temp_plot, "Mean Annual Temperature (°C)", "bold", rel_height = 0.1*0.6, top_margin = 3),
+                  add_title(precip_plot, "Mean Annual Precipitation (mm)", "bold", rel_height = 0.1*0.6, top_margin = 3),
+                  add_title(temp_map_global, "Global Period (14.5 - 14.1 kyr BP)", "plain"),
+                  add_title(precip_map_global, "Global Period (14.5 - 14.1 kyr BP)","plain"),
+                  add_title(temp_map_pulse1, "Pulse 1 (14.5 - 14.3 kyr BP)", "plain"),
+                  add_title(precip_map_pulse1, "Pulse 1 (14.5 - 14.3 kyr BP)", "plain"),
+                  add_title(temp_map_pulse2, "Pulse 2 (14.2 - 14.1 kyr BP)", "plain"),
+                  add_title(precip_map_pulse2, "Pulse 2 (14.2 - 14.1 kyr BP)", "plain"),
+                  temp_legend_panel,
+                  precip_legend_panel
+                  ),
+  ncol = 2,
+  labels = c("A", "B", "C", "D", rep("",6)),
+  rel_heights = c(1.3,
+                  rep(1,3),
+                  0.5),
+  label_size = 8)
+save_plot("figures/figure_2-climate_context.png", 
+          figure_2, 
+          base_height = 2,
+          ncol = 2,
+          nrow = 4,
+          base_asp = 1.8)
+# |_ Figure 3 - Climate Space ----
+# |_ Figure 4 - Suitabillity Predictions ----
+# |_ Figure 5 - Suitabillity Time-Series ----
+
+
+
 # GEOFACETS playground (experimental) ----
 
 # Create Grid
