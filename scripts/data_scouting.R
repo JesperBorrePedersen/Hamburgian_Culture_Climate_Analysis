@@ -1490,23 +1490,6 @@ save_plot("figures/temp_vs_precip_by_pulse.png",
           base_aspect_ratio = 1.6,
           base_height = 4)
 
-# Panel both figures up into one
-save_plot("figures/temp_vs_precip_both_panels.png",
-          plot_grid(temp_vs_precip_plot, 
-                    temp_vs_precip_plot_by_pulse, 
-                    labels = "AUTO", 
-                    align = "v", 
-                    axis = "tb"),
-          base_aspect_ratio = 3.2,
-          base_height = 4)
-save_plot("figures/temp_vs_precip_both_panels.eps",
-          plot_grid(temp_vs_precip_plot, 
-                    temp_vs_precip_plot_by_pulse, 
-                    labels = "AUTO", 
-                    align = "v", 
-                    axis = "tb"),
-          base_aspect_ratio = 3.2,
-          base_height = 4)
 # 4) BIOCLIM Models ----
 
 # Add cell_id to main geometry to allow for exclusion of multiple samples from
@@ -2120,6 +2103,24 @@ save_plot("figures/figure_2-climate_context.png",
           nrow = 4,
           base_asp = 1.8)
 # |_ Figure 3 - Climate Space ----
+# temperature vs precipitation plots
+# Panel both figures up into one
+save_plot("figures/figure_3-climate_space.png",
+          plot_grid(temp_vs_precip_plot, 
+                    temp_vs_precip_plot_by_pulse, 
+                    labels = "AUTO", 
+                    align = "v", 
+                    axis = "tb"),
+          base_aspect_ratio = 3.2,
+          base_height = 4)
+save_plot("figures/figure_3-climate_space.eps",
+          plot_grid(temp_vs_precip_plot, 
+                    temp_vs_precip_plot_by_pulse, 
+                    labels = "AUTO", 
+                    align = "v", 
+                    axis = "tb"),
+          base_aspect_ratio = 3.2,
+          base_height = 4)
 # |_ Figure 4 - Suitabillity Predictions ----
 # |_ Figure 5 - Suitabillity Time-Series ----
 
