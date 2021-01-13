@@ -452,6 +452,7 @@ temp_plot <- ggplot(temp_df %>% filter(year_BP >= 13000 & year_BP < 15500) %>%
   theme(legend.position = "none",
         plot.margin = margin(5,16,5,4),
         strip.background = element_rect(fill = NA),
+        axis.title.x = element_text(size = 8),
         axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
   )
 
@@ -562,6 +563,7 @@ precip_plot <- ggplot(precip_df %>% filter(year_BP >= 13000 & year_BP < 15500) %
   theme(legend.position = "none",
         plot.margin = margin(5,16,5,4),
         strip.background = element_rect(fill = NA),
+        axis.title.x = element_text(size = 8),
         axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
 
 save_plot("figures/figure1_precip.png",
