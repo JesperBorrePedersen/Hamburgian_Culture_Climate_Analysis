@@ -1927,7 +1927,7 @@ latticeExtra::layer({
             width=7.5, height=2.5,
             gp=gpar(fill="white",
                     col = "black",
-                    alpha = 0.9),
+                    alpha = 1),
             default.units='native')
 
 
