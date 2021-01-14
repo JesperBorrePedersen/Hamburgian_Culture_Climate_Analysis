@@ -262,14 +262,14 @@ histogram_plots <- lapply(
       labs(x = x_titles[index], y = "Number of Sites") +
       theme_cowplot(12) 
   })
-save_plot("figures/climate_histograms.png", 
-          plot_grid(plotlist = histogram_plots,
-                    labels = "AUTO"),
-          base_height = 6)
-save_plot("figures/climate_histograms.eps", 
-          plot_grid(plotlist = histogram_plots,
-                    labels = "AUTO"),
-          base_height = 6)
+# save_plot("figures/climate_histograms.png", 
+#           plot_grid(plotlist = histogram_plots,
+#                     labels = "AUTO"),
+#           base_height = 6)
+# save_plot("figures/climate_histograms.eps", 
+#           plot_grid(plotlist = histogram_plots,
+#                     labels = "AUTO"),
+#           base_height = 6)
 
 # |_ Summary Statistics ----
 
@@ -2054,9 +2054,10 @@ predict_time_series <- function(bioclim_model_list, model_name, file_name){
     k_year_bp_end <- formatC(time_range[index] / 10 + 2, 1, format = "f")
     cat(paste0( k_year_bp_start, "-", k_year_bp_end, "k BP\n"))
     plot_preds_map(base_raster = preds_time_series[[index]],
-                   main = paste0(model_name, " Model Suitability ", k_year_bp_start, "-", k_year_bp_end, "k BP"), 
+                   main = NULL, 
                    file_name = paste0(out_folder, "/predictions_", 
                                       k_year_bp_start, "-", k_year_bp_end, "k_BP.png"),
+                   to_file = T
                  #palette = c("grey30", "#f38f32")
                  )
   })
@@ -2197,7 +2198,55 @@ write_csv(ts_pulse_2_patch_stats, "tables/landscape_stats_ts_pulse_2.csv")
 # 7) Final Figures ----
 
 # |_ Figure 1 - Histograms & Points ----
+# Check whether histograms exists
+exist(histogram_plots)
 
+# Add point drawings to panels b,c,e,f
+point_drawings <- image_read("figures/helper_figures/ham_points.jpeg")
+# Crop Pulse 1 point ("classic hamburgian )
+point_pulse_1 <- image_crop(point_drawings, "410x1165+1280+650")
+# Crop Pulse 2 point ("Havelte Group")
+point_pulse_2 <- image_crop(point_drawings, "500x1814+0+10")
+
+# Add to the respective histogram plots
+histogram_plots[[2]] <- ggdraw() + 
+  draw_plot(histogram_plots[[2]]) + 
+  draw_image(point_pulse_1,
+             scale = 0.4,
+             x = 0.65,
+             y = 0.15,
+             width = 410 / 1000,
+             height = 1164 / 1000)
+histogram_plots[[3]] <- ggdraw() + 
+  draw_plot(histogram_plots[[3]]) + 
+  draw_image(point_pulse_2,
+             scale = 0.4,
+             x = 0.6,
+             y = -0.3,
+             width = 500 / 1000,
+             height = 1804 / 1000)
+histogram_plots[[5]] <- ggdraw() + 
+  draw_plot(histogram_plots[[5]]) + 
+  draw_image(point_pulse_1,
+             scale = 0.4,
+             x = 0.65,
+             y = 0.15,
+             width = 410 / 1000,
+             height = 1164 / 1000)
+histogram_plots[[6]] <- ggdraw() + 
+  draw_plot(histogram_plots[[6]]) + 
+  draw_image(point_pulse_2,
+             scale = 0.4,
+             x = 0.6,
+             y = -0.3,
+             width = 500 / 1000,
+             height = 1804 / 1000)
+
+# Save figure
+save_plot("figures/figure_1_climate_hist_and_points.png", 
+          plot_grid(plotlist = histogram_plots,
+                    labels = "AUTO"),
+          base_height = 6)
 
 # |_ Figure 2 - Climate Context ----
 # List of plots by row
