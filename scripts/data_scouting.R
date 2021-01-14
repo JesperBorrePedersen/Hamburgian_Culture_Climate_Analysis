@@ -2357,7 +2357,7 @@ plot_list <- c("preds_map_global",
 # Check all object exist
 lapply(plot_list, function(x) exists(x))
 
-# Conmine legend and colour scale
+# Combine legend and colour scale
 predictions_legend_panel <- plot_grid(add_title(predictions_scale, 
                                          "Predicted Suitabillity (BIOCLIM)",
                                          "plain",
@@ -2390,54 +2390,95 @@ save_plot("figures/figure_4_suitability_predictions.png",
           ncol = 1,
           nrow = 3,
           base_asp = 1.85)
+
 # |_ Figure 5 - Suitabillity Time-Series ----
+# read in time-series plots (centuries 14.7-14.1)
+ts_maps_global <- lapply(rev(list.files("figures/preds_ts_global/", pattern = ".png", full.names = T)[11:17]),
+                         function(x) ggdraw() + draw_image(image_read(x), scale = 0.95))
+ts_maps_pulse_1 <- lapply(rev(list.files("figures/preds_ts_pulse_1/", pattern = ".png", full.names = T)[11:17]),
+                          function(x) ggdraw() + draw_image(image_read(x), scale = 0.95))
+ts_maps_pulse_2 <- lapply(rev(list.files("figures/preds_ts_pulse_2/", pattern = ".png", full.names = T)[11:17]),
+                          function(x) ggdraw() + draw_image(image_read(x), scale = 0.95))
+# Arrange as panels in column
+ts_maps_global <- plot_grid(plotlist = ts_maps_global,
+                            ncol = 1)
+ts_maps_pulse_1 <- plot_grid(plotlist = ts_maps_pulse_1,
+                            ncol = 1)
+ts_maps_pulse_2 <- plot_grid(plotlist = ts_maps_pulse_2,
+                            ncol = 1)
+# Generate a timeline plot
+ts_time_scale <- ggplot() + 
+  scale_y_continuous(limits = c(14.0, 14.7),
+                     breaks = seq(14.0, 14.7, 0.1),
+                     labels = paste0(formatC(seq(14.0, 14.7, 0.1), digits = 1, format = "f"), " kyr BP"),
+                     expand = c(0,0),
+                     ) +
+  geom_blank() +
+  theme_cowplot() +
+  theme(axis.line.x = element_line(colour = NA),
+        axis.text.x = element_text(colour = NA),
+        axis.ticks.x = element_line(colour = NA),
+        axis.text.y = element_text(size = 12))
 
+# Update the legend
+predictions_scale <- image_read("figures/helper_figures/predictions_scale.png")
+predictions_scale <- ggdraw() + draw_image(predictions_scale,
+                                           x = -0.231,
+                                           y = 0.5,
+                                           hjust = 0,
+                                           vjust = 0.5,
+                                           scale = 1)
+predictions_legend_panel <- plot_grid(add_title(predictions_scale, 
+                                                "Predicted Suitabillity (BIOCLIM)",
+                                                "plain",
+                                                12,
+                                                rel_height = 0.2,
+                                                top_margin = 2,
+                                                left_margin = 7),
+                                      plot_grid(predictions_legend),
+                                      rel_widths = c(0.66,0.3))
+# Assemble plot
+figure_5_body <- plot_grid(ts_time_scale,
+                      ts_maps_global,
+                      ts_maps_pulse_1,
+                      ts_maps_pulse_2,
+                      ncol = 4,
+                      rel_widths = c(0.3,1,1,1))
+# add labels and legend
+figure_5_labels <- lapply(
+  c("Global Model", "Pulse 1 Model", "Pulse 2 Model"),
+  function(title){
+    ggdraw() + 
+      draw_label(
+        title,
+        fontface = "bold",
+        x = 0,
+        hjust = 0,
+        size = 12) + 
+      theme(plot.margin = margin(4, 0, 0, 7))
+    
+  }
+)
+figure_5_labels <- plot_grid(
+  NULL, figure_5_labels[[1]],
+  figure_5_labels[[2]], 
+  figure_5_labels[[3]],
+  rel_widths =c(0.3,1,1,1),
+  nrow= 1)
+figure_5_legend <- plot_grid(
+  NULL, predictions_legend_panel, NULL,
+  rel_widths = c(0.3,1.8,1.2),
+  nrow = 1
+)
+figure_5 <- plot_grid(figure_5_labels,
+                      figure_5_body,
+                      figure_5_legend,
+                      ncol = 1,
+                      rel_heights = c(0.015,1,0.1))
+save_plot("figures/figure_5-suitability_time_series.png",
+          figure_5,
+          base_height = 1.9,
+          ncol = 3,
+          nrow = 7,
+          base_asp = 2)
 
-
-# GEOFACETS playground (experimental) ----
-
-# Create Grid
-x_grid <- seq(floor(min(hamburgian_sites$Longitude)),
-              ceiling(max(hamburgian_sites$Longitude)),
-              1)
-y_grid <- seq(floor(min(hamburgian_sites$Latitude)),
-              ceiling(max(hamburgian_sites$Latitude)),
-              1)
-hamburgian_sites <- hamburgian_sites %>%
-  arrange(Longitude, Latitude)
-hamburgian_sites$col <- ceiling(hamburgian_sites$Longitude*10) - 4 *10
-hamburgian_sites$row <- ceiling(hamburgian_sites$Latitude*10) - 55 *10
-ggplot(hamburgian_sites, aes(x = row)) + geom_histogram(binwidth =  1)
-ggplot(hamburgian_sites, aes(x = col)) + geom_histogram(binwidth =  1)
-hamburgian_sites %>% group_by(col) %>% summarise(n = n()) %>% filter(n> 1)
-hamburgian_sites2 <- hamburgian_sites %>%
-  st_drop_geometry() %>%
-  mutate(col2 = col, row2 = row) %>%
-  group_by(col) %>%
-  group_modify(function(x, y){
-    print(x$row)
-    print(y)
-    print(x$row2)
-    if(nrow(x) > 1) {
-      x$col2 <- x$col2 + rep(seq(0, nrow(x)/10, nrow(x)/10/nrow(x)), ceiling(nrow(x)/2))[1:nrow(x)] 
-      x$row2 <- x$row2 + c(rep(0, ceiling(nrow(x)/2)),
-                           rep(1, ceiling(nrow(x)/2)))[1:nrow(x)] 
-      return(x)
-    } else return(x)
-  }) %>% 
-  ungroup() %>%
-  arrange(col2,row2) %>%
-  mutate(col = as.numeric(factor(col2)),
-         row = as.numeric(factor(row2)))
-
-library(geofacet)
-grid_design(data = dplyr::select(hamburgian_sites, Site, Latitude, Longitude, col, row),
-            img = "http://bit.ly/us-grid")
-
-write.csv(select(hamburgian_sites2,
-                 Site,
-                 Latitude,
-                 Longitude,
-                 col,
-                 row), 
-          "test_grid.csv", row.names = F)
