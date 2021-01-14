@@ -2225,7 +2225,7 @@ write_csv(ts_pulse_2_patch_stats, "tables/landscape_stats_ts_pulse_2.csv")
 
 # |_ Figure 1 - Histograms & Points ----
 # Check whether histograms exists
-exist(histogram_plots)
+exists("histogram_plots")
 
 # Add point drawings to panels b,c,e,f
 point_drawings <- image_read("figures/helper_figures/ham_points.jpeg")
@@ -2238,33 +2238,33 @@ point_pulse_2 <- image_crop(point_drawings, "500x1814+0+10")
 histogram_plots[[2]] <- ggdraw() + 
   draw_plot(histogram_plots[[2]]) + 
   draw_image(point_pulse_1,
-             scale = 0.4,
-             x = 0.65,
-             y = 0.15,
+             scale = 0.25,
+             x = 0.675,
+             y = 0.2,
              width = 410 / 1000,
              height = 1164 / 1000)
 histogram_plots[[3]] <- ggdraw() + 
   draw_plot(histogram_plots[[3]]) + 
   draw_image(point_pulse_2,
-             scale = 0.4,
-             x = 0.6,
-             y = -0.3,
+             scale = 0.25,
+             x = 0.625,
+             y = -0.2,
              width = 500 / 1000,
              height = 1804 / 1000)
 histogram_plots[[5]] <- ggdraw() + 
   draw_plot(histogram_plots[[5]]) + 
   draw_image(point_pulse_1,
-             scale = 0.4,
-             x = 0.65,
-             y = 0.15,
+             scale = 0.25,
+             x = 0.675,
+             y = 0.2,
              width = 410 / 1000,
              height = 1164 / 1000)
 histogram_plots[[6]] <- ggdraw() + 
   draw_plot(histogram_plots[[6]]) + 
   draw_image(point_pulse_2,
-             scale = 0.4,
-             x = 0.6,
-             y = -0.3,
+             scale = 0.25,
+             x = 0.625,
+             y = -0.2,
              width = 500 / 1000,
              height = 1804 / 1000)
 
