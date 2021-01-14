@@ -1844,6 +1844,163 @@ preds_map_pulse_2 <- plot_preds_map(base_raster = predictions_pulse_2,
 #                palette = c("grey30", "#f38f32"),
 #                colour_key = F)
 
+# |_ Colourkey ----
+palette <- sequential_hcl(
+  103, 
+  "Inferno")
+palette <- palette[c(-1,-2,-3)]
+predictions_scale <-  levelplot(predictions_global, 
+                         margin = F,
+                         main = NULL,
+                         colorkey = list(space="bottom", labels = list(cex = 0.5)),
+                         at = seq(0,1,0.05),
+                         scales = list(draw = F),
+                         xlab = NULL,
+                         ylab = NULL,
+                         par.settings = rasterTheme(
+                           region = palette,
+                           layout.widths = list(left.padding=0.5,
+                                                right.padding=0.5),
+                           layout.heights = list(top.padding=-1, 
+                                                 bottom.padding=-1)),
+                         panel = function(...) {
+                           panel.fill(col = "grey30")
+                           panel.levelplot(...)
+                         }) 
+
+# Export to file
+png("figures/helper_figures/predictions_scale.png", 
+    width = 1.5,
+    height = 3,
+    units = "in",
+    res = 300,
+    type = "cairo",
+    antialias = "none")
+print(predictions_scale)
+dev.off()
+
+# Cut out scale
+predictions_scale <- image_read("figures/helper_figures/predictions_scale.png")
+predictions_scale <- image_crop(predictions_scale, "450x180+0+480")
+image_write(predictions_scale, "figures/helper_figures/predictions_scale.png") 
+predictions_scale <- ggdraw() + draw_image(predictions_scale,
+                                    x = -0.105,
+                                    y = 0.5,
+                                    hjust = 0,
+                                    vjust = 0.5,
+                                    scale = 1)
+
+# |_ Legend ----
+predictions_legend <- levelplot(predictions_global, 
+                         margin = F,
+                         main = NULL,
+                         colorkey = F,
+                         at = seq(0,1,0.05),
+                         scales = list(draw = F),
+                         xlab = NULL,
+                         ylab = NULL,
+                         par.settings = rasterTheme(
+                           region = palette,
+                           layout.widths = list(left.padding=-1,
+                                                right.padding=-1),
+                           layout.heights = list(top.padding=-1, 
+                                                 bottom.padding=-1)),
+                         panel = function(...) {
+                           panel.fill(col = "grey30")
+                           panel.levelplot(...)
+                         }) +
+  
+  latticeExtra::layer(sp.polygons(land_for_maps, col = "black", alpha = 1)) +
+  latticeExtra::layer(sp.polygons(ocean_for_maps, col = "NA", fill = "darkblue", alpha = 1)) +
+  latticeExtra::layer(sp.polygons(ice_for_maps, col = "darkgrey", fill = "white", alpha = 1)) +
+  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "uncertain",],
+                                col = col_grey_light, pch = shape_uncertain, cex = 0.8)) +
+  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_1",],
+                                col = col_pulse1, fill = col_pulse1_transparent, pch = shape_pulse_1)) +
+  latticeExtra::layer(sp.points(hamburgian_sites_sp[hamburgian_sites_sp$chron_association == "pulse_2",],
+                                col = col_pulse1, fill = col_pulse2_transparent, pch = shape_pulse_2))  +
+
+latticeExtra::layer({
+  centre_x <- 27.5
+  centre_y <- 58.3
+  grid.rect(x=centre_x, y=centre_y,
+            width=7.5, height=2.5,
+            gp=gpar(fill="white",
+                    col = "black",
+                    alpha = 0.9),
+            default.units='native')
+
+
+  grid.points(#label = "Pulse 1",
+    x=centre_x-2.75, y=centre_y+2.5/4,
+    pch = shape_pulse_1,
+    gp=gpar(cex = 0.45,
+            col = col_pulse1,
+            fill = col_pulse1_transparent),
+    default.units='native')
+  grid.points(#label = "Pulse 2",
+    x=centre_x-2.75, y=centre_y,
+    pch = shape_pulse_2,
+    gp=gpar(cex = 0.45,
+            col = col_pulse2,
+            fill = col_pulse2_transparent),
+    default.units='native')
+  grid.points(#label = "Uncertain",
+    x=centre_x-2.75, y=centre_y-2.5/4,
+    pch = shape_uncertain,
+    gp=gpar(cex = 0.65,
+            col = col_grey_dark),
+    default.units='native')
+
+  grid.text(label = "Pulse 1",
+            x=centre_x-1.75, y=centre_y+2.5/4,
+            #just = "left",
+            hjust = 0,
+            vjust = 0.4,
+            gp=gpar(cex=0.5,
+                    col = "black"),
+            default.units='native')
+  grid.text(label = "Pusle 2",
+            x=centre_x-1.75, y=centre_y,
+            #just = "left",
+            hjust = 0,
+            vjust = 0.4,
+            gp=gpar(cex=0.5,
+                    col = "black"),
+            default.units='native')
+  grid.text(label = "Uncertain",
+            x=centre_x-1.75, y=centre_y-2.5/4,
+            #just = "left",
+            hjust = 0,
+            vjust = 0.4,
+            gp=gpar(cex=0.5,
+                    col = "black"),
+            default.units='native')
+})
+# Export to file
+png("figures/helper_figures/predictions_legend.png", 
+    width = 5,
+    height = 3/6*5,
+    units = "in",
+    res = 300,
+    type = "cairo",
+    antialias = "none")
+print(predictions_legend)
+dev.off()
+
+# Cut out legend
+predictions_legend <- image_read("figures/helper_figures/predictions_legend.png")
+predictions_legend <- image_crop(predictions_legend, "263x152+1211+70")
+image_write(predictions_legend, "figures/helper_figures/predictions_legend.png") 
+predictions_legend <- ggdraw() + draw_image(predictions_legend,
+                                     x = 0.44,
+                                     y = 0.6,
+                                     hjust = 0.5,
+                                     vjust = 0.5,
+                                     scale = 0.75)
+
+predictions_legend
+
 # 5) Time-Series for Predictions ----
 
 
@@ -2151,23 +2308,39 @@ plot_list <- c("preds_map_global",
 # Check all object exist
 lapply(plot_list, function(x) exists(x))
 
+# Conmine legend and colour scale
+predictions_legend_panel <- plot_grid(add_title(predictions_scale, 
+                                         "Predicted Suitabillity (BIOCLIM)",
+                                         "plain",
+                                         8,
+                                         rel_height = 0.2,
+                                         top_margin = 2,
+                                         left_margin = 15.5),
+                               predictions_legend,
+                               rel_widths = c(0.66,0.33))
+
 # Add titles and combine into one figure
 figure_4 <- plot_grid(
   plotlist = list(add_title(preds_map_global, 
-                           "Global Period Model Predictions 14.5k-14.1k BP"),
+                           "Global Period Model Predictions 14.5k-14.1k BP",
+                           top_margin = 3.5),
                  add_title(preds_map_pulse_1,
-                           "Pulse 1 Model Predictions 14.5k-14.3k BP"),
+                           "Pulse 1 Model Predictions 14.5k-14.3k BP",
+                           top_margin = 3.5),
                  add_title(preds_map_pulse_2,
-                           "Pulse 2 Model Predictions 14.2k-14.1k BP")),
+                           "Pulse 2 Model Predictions 14.2k-14.1k BP",
+                           top_margin = 3.5),
+                 predictions_legend_panel),
   labels = "AUTO",
   ncol = 1,
-  label_size = 1.8)
+  label_size = 8,
+  rel_heights = c(1,1,1,0.5))
 save_plot("figures/figure_4_suitability_predictions.png", 
           figure_4,
           base_height = 2,
           ncol = 1,
           nrow = 3,
-          base_asp = 2)
+          base_asp = 1.85)
 # |_ Figure 5 - Suitabillity Time-Series ----
 
 
