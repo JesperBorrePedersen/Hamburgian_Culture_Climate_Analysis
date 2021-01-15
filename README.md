@@ -10,7 +10,7 @@ This repository contains the data and code for our paper: _Distribution modellin
 3. [Acknowledgements](##Ackowledgements)
 4. [Getting Started](#Getting-Started)
 5. [Software](#Software)
-6. [Folder Structure](##Folder-Structure)
+6. [Folder Structure](##folder-structure)
 7. [License](##License)
 
 ## Authors
