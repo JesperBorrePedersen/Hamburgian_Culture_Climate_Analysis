@@ -8,9 +8,9 @@ This repository contains the data and code for our paper: _Distribution modellin
 1. [Authors](##Authors)
 2. [Citation](##Citation)
 3. [Acknowledgements](##Ackowledgements)
-4. [Getting Started](#getting-started)
+4. [Getting Started](#Getting-Started)
 5. [Software](#Software)
-6. [Folder Structure](##folder-structure)
+6. [Folder Structure](##Folder-Structure)
 7. [License](##License)
 
 ## Authors
