@@ -31,7 +31,7 @@ Jesper B. Pedersen would like to thank the University of Aarhus for granting a P
 Felix Riede’s contribution to this paper is part of CLIOARCH, an ERC Consolidator Grant project that has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No. 817564).
 
 ## Getting Started
-_Please note:_ This repository contains the code and the archaeological data required to replicate our analysis. However, the by-century temperature and preciptation rasters from the CHELSA Trace21k dataset are also needed to fully replicate the anlysis. These predictor data form the basis of the model fits and predictions. __The CHELSA Trace21k dataset is currenlty in review__ and not yet publicly available. We will update this section once the data has completed peer-review and has been released.  
+_Please note:_ This repository contains the code and the archaeological data required to replicate our analysis. However, the by-century temperature and preciptation rasters from the CHELSA Trace21k dataset are also needed. These data form the basis of the model fits and predictions. __The CHELSA Trace21k dataset is currenlty in review__ and not yet publicly available. We will update this section once the data has completed peer-review and has been released.  
 
 The folder structure of this repostiroy and the software requirements for the anlysis are outlined below. 
 
