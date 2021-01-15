@@ -35,7 +35,7 @@ This repository contains the code and the archaeological data required to replic
 
 The folder structure of this repostiroy and the software requirements for the anlysis are outlined below. 
 
-All code required for the analysis and reproduction of the figures can be found in the `scripts\analysis.R` script. The code is structured using RStudio section delinations to help naviagation within the script. 
+All code required for the analysis and reproduction of the figures can be found in the `scripts/analysis.R` script. The code is structured using RStudio section delinations to help naviagation within the script. 
 
 ### Software
 The analysis was developed and carried out using R version 3.6.0 and the following packages: sf 0.9-3, raster 3.1-5, tidyverse 1.3.0, cowplot 1.0.0, rasterVis 0.47, colorspace 1.4-1, dismo 1.3-3, magick 2.5.2 and landscapemetrics 1.5.1 .
