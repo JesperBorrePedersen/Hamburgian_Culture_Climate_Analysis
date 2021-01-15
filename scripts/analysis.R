@@ -1403,10 +1403,10 @@ temp_vs_precip_plot <- ggplot() +
            colour = col_grey_dark, fill = col_grey_dark, alpha = 0.25) +
   theme_cowplot(14) +
   theme(legend.position = "none")
-save_plot("figures/temp_vs_precip.png",
-          temp_vs_precip_plot,
-          base_aspect_ratio = 1.6,
-          base_height = 4)
+# save_plot("figures/temp_vs_precip.png",
+#           temp_vs_precip_plot,
+#           base_aspect_ratio = 1.6,
+#           base_height = 4)
 
 # plot the two pusles
 temp_vs_precip_plot_by_pulse <- ggplot() +  
@@ -1492,10 +1492,10 @@ temp_vs_precip_plot_by_pulse <- ggplot() +
   annotate("point", x = 5.1, y = 2500, shape = 21, size = 2,
            colour = col_grey_dark, fill = col_grey_dark, alpha = 0.25) +
   theme_cowplot(14) 
-save_plot("figures/temp_vs_precip_by_pulse.png",
-          temp_vs_precip_plot_by_pulse,
-          base_aspect_ratio = 1.6,
-          base_height = 4)
+# save_plot("figures/temp_vs_precip_by_pulse.png",
+#           temp_vs_precip_plot_by_pulse,
+#           base_aspect_ratio = 1.6,
+#           base_height = 4)
 
 # 4) BIOCLIM Models ----
 
@@ -1851,7 +1851,9 @@ plot_preds_map <- function(base_raster,
         width = 6,
         height = 3,
         units = "in",
-        res = 300)
+        res = 300
+        type = "cairo",
+        antialias = "none")
     print(map_plot)
     dev.off()
   }
@@ -2004,7 +2006,7 @@ latticeExtra::layer({
             gp=gpar(cex=0.5,
                     col = "black"),
             default.units='native')
-  grid.text(label = "Pusle 2",
+  grid.text(label = "Pulse 2",
             x=centre_x-1.75, y=centre_y,
             #just = "left",
             hjust = 0,
@@ -2273,6 +2275,10 @@ save_plot("figures/figure_1_climate_hist_and_points.png",
           plot_grid(plotlist = histogram_plots,
                     labels = "AUTO"),
           base_height = 6)
+save_plot("figures/figure_1_climate_hist_and_points.eps", 
+          plot_grid(plotlist = histogram_plots,
+                    labels = "AUTO"),
+          base_height = 6)
 
 # |_ Figure 2 - Climate Context ----
 # List of plots by row
@@ -2353,6 +2359,12 @@ save_plot("figures/figure_2-climate_context.png",
           ncol = 2,
           nrow = 4,
           base_asp = 1.8)
+save_plot("figures/figure_2-climate_context.eps", 
+          figure_2, 
+          base_height = 2,
+          ncol = 2,
+          nrow = 4,
+          base_asp = 1.8)
 
 # |_ Figure 3 - Climate Space ----
 # temperature vs precipitation plots
@@ -2411,6 +2423,12 @@ figure_4 <- plot_grid(
   label_size = 8,
   rel_heights = c(1,1,1,0.5))
 save_plot("figures/figure_4_suitability_predictions.png", 
+          figure_4,
+          base_height = 2,
+          ncol = 1,
+          nrow = 3,
+          base_asp = 1.85)
+save_plot("figures/figure_4_suitability_predictions.eps", 
           figure_4,
           base_height = 2,
           ncol = 1,
@@ -2507,8 +2525,15 @@ save_plot("figures/figure_5-suitability_time_series.png",
           ncol = 3,
           nrow = 7,
           base_asp = 2)
+save_plot("figures/figure_5-suitability_time_series.eps",
+          figure_5,
+          base_height = 1.9,
+          ncol = 3,
+          nrow = 7,
+          base_asp = 2)
 
-# |_ Animations
+# |_ Animations ----
+
 # Generate Animation
 animate_time_series <- function(ts_name){
   # Status
@@ -2526,23 +2551,39 @@ animate_time_series <- function(ts_name){
   
   # Add legend and Time Stamp
   prediction_legend <- image_read("figures/helper_figures/predictions_legend.png")
+  max_index <- max(seq_along(time_range))
   img_list <- lapply(seq_along(time_range), function(index){
+    cat(paste0(index,"."))
     k_year_bp_start <- formatC(time_range[index] / 10 + 2.1, 1, format = "f")
     k_year_bp_end <- formatC(time_range[index] / 10 + 2, 1, format = "f")
     image1 <- img_list[[index]] %>% image_composite(prediction_legend, offset = "+1490+100") %>%
-      image_annotate(paste0(k_year_bp_start, " kyr BP"), size = 70, color = "white", location = "+60+90")
-    return(image)
+      image_annotate(paste0(k_year_bp_start, " kyr BP"), size = 70, color = "white", location = "+60+90") %>%
+      image_crop("1800x796+0+52")
+    return(image1)
+    # if(index == 10) image_morphed <- image1
+    # else {
+    #   image2 <- img_list[[index + 1]] %>% image_composite(prediction_legend, offset = "+1490+100") %>%
+    #   image_annotate(paste0(k_year_bp_end, " kyr BP"), size = 70, color = "white", location = "+60+90")
+    # 
+    #   image_morphed <- image_morph(c(image2,image1), frames = 5)
+    # }
+    # return(image_morphed)
     })
   
+  # Status
+  cat("\nJoining images...")
   # join images 
-  img_joined <- image_join(img_list)
+  img_joined <- image_join(rev(img_list))
   
-  img_morphed <- image_morph(img_joined, frames = 8)
-  # animate at 1 frame per second
-  img_animated <- image_animate(img_morphed, fps = 20)
-  
+  # Status
+  cat("\nExporting GIF...")
   # Export as gif
-  image_write(image = img_animated,
-            path = paste0(out_folder, "/preds_time_series_", ts_name, ".gif"))
+  image_write_gif(image = img_joined,
+            path = paste0(out_folder, "/preds_time_series_", ts_name, ".gif"),
+            delay = 0.5)
+  cat("\nDone.")
+  return(NULL)
 }
-
+animate_time_series("global")
+animate_time_series("pulse_1")
+animate_time_series("pulse_2")
