@@ -28,9 +28,11 @@ Jesper B. Pedersen would like to thank the University of Aarhus for granting a P
 Felix Riede’s contribution to this paper is part of CLIOARCH, an ERC Consolidator Grant project that has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No. 817564).
 
 ## Getting Started
-This repository contains the code and the archaeological data required to replicate the analysis. However, the by-centruy temperature and preciptations estimates from the CHELSA Trace21k dataset that from the base of the model fits and predictions are also needed. The CHELSA Trace21k dataset is currenlty in review and not publicly available yet, upon publicaition of the dataset it will be made publicly avilable via (chelsa-climate.org) and we will update this section with instructions on how to import the data.
+This repository contains the code and the archaeological data required to replicate our analysis. However, the by-centruy temperature and preciptations raster data from the CHELSA Trace21k dataset are also needed. These predictor data fotm the basis of the model fits and predictions themselves. The CHELSA Trace21k dataset is currenlty in review and not publicly available yet. We will update this section upon public release of the data.  
 
-The folder structure of this repostiroy and the software requirements for the anlysis are outlined below. All code required for the analysis and reproduction of the figures can be found in the `scripts\analysis.R` script. It can best be navigated via an editor or IDE that allows for R code section indexing such as RStudio. 
+The folder structure of this repostiroy and the software requirements for the anlysis are outlined below. 
+
+All code required for the analysis and reproduction of the figures can be found in the `scripts\analysis.R` script. The code is structured using RStudio section delinations to help naviagation within the script. 
 
 ### Software
 The analysis was developed and carried out in R. Using the following packages: ... 
