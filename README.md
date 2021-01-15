@@ -36,6 +36,7 @@ The folder structure of this repostiroy and the software requirements for the an
 The analysis was developed and carried out in R. Using the following packages: ... 
 
 ### Folder Structure
+
 ```
 ├── data            Archaeological data       
 ├── figures         Figure and animation outputs
