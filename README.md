@@ -35,7 +35,7 @@ The folder structure of this repostiroy and the software requirements for the an
 All code required for the analysis and reproduction of the figures can be found in the `scripts\analysis.R` script. The code is structured using RStudio section delinations to help naviagation within the script. 
 
 ### Software
-The analysis was developed and carried out in R. Using the following packages: ... 
+The analysis was developed and carried out in R. Using the following packages: ADD LIST! 
 
 ### Folder Structure
 
