@@ -8,8 +8,10 @@ This repository contains the data and code for our paper: _Distribution modellin
 1. [Authors](##Authors)
 2. [Citation](##Citation)
 3. [Acknowledgements](##Ackowledgements)
-4. [Folder Structure](##Folder Structure)
-5. [License](##License)
+4. [Getting Started](#getting-started)
+5. [Software](#Software)
+6. [Folder Structure](##folder-structure)
+7. [License](##License)
 
 ## Authors
 Jesper Borre Pedersen, Jakob Johan Assmann, Signe Normand, Dirk Nikolaus Karger, Felix Riede.
