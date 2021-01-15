@@ -5,13 +5,13 @@
 This repository contains the data and code for our paper: _Distribution modelling reveals the changing niches of pioneering Late Pleistocene populations in northern Europe._
 
 ## Content
-1. [Authors](##Authors)
-2. [Citation](##Citation)
-3. [Acknowledgements](##Ackowledgements)
+1. [Authors](#Authors)
+2. [Citation](#Citation)
+3. [Acknowledgements](#Ackowledgements)
 4. [Getting Started](#Getting-Started)
 5. [Software](#Software)
 6. [Folder Structure](#folder-structure)
-7. [License](##License)
+7. [License](#License)
 
 ## Authors
 Jesper Borre Pedersen, Jakob Johan Assmann, Signe Normand, Dirk Nikolaus Karger, Felix Riede.
