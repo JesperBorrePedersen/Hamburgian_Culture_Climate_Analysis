@@ -50,7 +50,7 @@ The analysis was developed and carried out using R version 3.6.0 and the followi
 ```
 
 ## Animated Time Series
-The animated times series for the suitability predictions of the three models can be found [here](/figures/animations.md).
+The animated times series for the suitability predictions can be found [here](/figures/animations.md).
 
 ## License
 The content of this repository is licensed under a Creative Commons Attribution 4.0 International License: [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/)
