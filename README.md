@@ -2,7 +2,7 @@
 
 ## Description
 
-This repository contains the data and code for our paper: _Distribution modelling reveals the changing niches of pioneering Late Pleistocene populations in northern Europe._
+This repository contains the data, code and supplementary details on the methods of our manuscript: _Distribution modelling reveals the changing niches of pioneering Late Pleistocene populations in northern Europe._
 
 ## Content
 1. [Authors](#Authors)
