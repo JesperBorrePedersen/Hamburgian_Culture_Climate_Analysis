@@ -892,7 +892,7 @@ add_title <- function(plot, title, face = "plain", font_size = 8,
 }
 # Combine legend and colour scale
 predictions_legend_panel <- plot_grid(add_title(predictions_scale, 
-                                         "Predicted propability (glm)",
+                                         "Predicted Propability (glm)",
                                          "plain",
                                          8,
                                          rel_height = 0.2,
