@@ -1,0 +1,7 @@
+Predictor,Estimate (global),p-value (global),Estimate (pulse_1),p-value (pulse_1),Estimate (pulse_2),p-value (pulse_2)
+Intercept,-20.34625,2e-8,-316.66278,0.00415851,-110.3848,0.0797742
+Temperature,1.31909,0.00136899,66.13707,0.00382605,56.70494,0.07154979
+Precipitation,0.04642,1.63e-6,0.4206,0.00742142,0.42096,0.08275616
+Temperature²,-0.14404,0,-3.60773,0.0029935,-9.38671,0.04165625
+Precipitation²,-3e-5,2.253e-5,-1.4e-4,0.01294513,-4.2e-4,0.07926871
+Temperature :  Precipitation,-0.00103,0.06457066,-0.04271,0.00764241,-0.11896,0.06107805

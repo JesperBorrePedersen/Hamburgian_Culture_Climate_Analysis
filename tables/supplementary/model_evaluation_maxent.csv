@@ -1,0 +1,4 @@
+model_name,n_cross,mean_auc,mean_kappa,mean_tss,auc,kappa,tss
+model_global,5,0.8,0.28,0.44,0.8,0.3,0.44
+model_pulse_1,5,0.86,0.27,0.62,0.86,0.3,0.59
+model_pulse_2,5,0.75,0.08,0.52,0.84,0.21,0.65
