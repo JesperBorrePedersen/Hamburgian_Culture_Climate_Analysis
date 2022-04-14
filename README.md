@@ -1,5 +1,8 @@
 # Hamburgian_Culture_Climate_Analysis
 
+## Compendium DOI
+[![DOI](https://zenodo.org/badge/286960061.svg)](https://zenodo.org/badge/latestdoi/286960061)
+
 ## Description
 
 This repository contains the data, code and supplementary information for our manuscript: _Climate niche modelling reveals the fate of pioneering Late Pleistocene populations in northern Europe._
